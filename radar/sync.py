@@ -222,6 +222,16 @@ def _event_key(item_id: str, score: int, reason: str, base_revision: int) -> str
     return json.dumps([item_id, score, reason, base_revision], ensure_ascii=False, separators=(",", ":"))
 
 
+def _local_rating_score(value):
+    # Obsidian may initially display an empty property as text. Accept a
+    # single score digit from that field, but never booleans or other text.
+    if isinstance(value, str) and re.fullmatch(r"[1-5]", value.strip()):
+        return int(value.strip())
+    if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 5:
+        return value
+    return None
+
+
 def export_ratings(vault: Path, exchange: Path, state: dict,
                    state_path: Path | None = None) -> dict:
     """Export changed Obsidian ratings before any import. Returns new last-exported map."""
@@ -242,7 +252,7 @@ def export_ratings(vault: Path, exchange: Path, state: dict,
             except (OSError, SyncError):
                 continue
             iid = fm.get("item_id")
-            score = fm.get("rating")
+            score = _local_rating_score(fm.get("rating"))
             if not isinstance(iid, str) or not ID_RE.match(iid) or score is None:
                 continue
             if not isinstance(score, int) or isinstance(score, bool) or not 1 <= score <= 5:
@@ -331,6 +341,9 @@ def render_item_note(item: dict, existing: str | None, rating) -> str:
         "repository": item.get("repository", ""),
         "topics": item.get("topics", []),
         "user_facing_ai": item.get("user_facing_ai", False),
+        "rating": None,
+        "rating_reason": "",
+        "rating_revision": 0,
     }
     if item.get("publication"):
         fm["publication"] = item["publication"]
@@ -342,6 +355,20 @@ def render_item_note(item: dict, existing: str | None, rating) -> str:
     lines = [render_frontmatter(fm), ""]
     lines.append(f"# {item.get('title', item['item_id'])}")
     lines.append("")
+    lines.extend([
+        "## Rate this idea",
+        "",
+        "Enter a whole number from 1 to 5 in the **rating** property above. "
+        "Optionally explain your choice in **rating_reason**. Leave rating blank if you have not decided.",
+        "",
+        "**1** Skip · **2** Weak match · **3** Useful · **4** Investigate · **5** Propose an experiment",
+        "",
+        "Your rating syncs automatically while this computer is online. "
+        "You can also reply to the newsletter using the line below; replace SCORE with your choice:",
+        "",
+        f"`RATE {item['item_id']} SCORE REV={fm['rating_revision']} your reason`",
+        "",
+    ])
     lines.append(f"Source: {item.get('source_url', '')}")
     publication = item.get("publication")
     if publication:
@@ -368,9 +395,8 @@ def render_item_note(item: dict, existing: str | None, rating) -> str:
 
 
 def _frontmatter_rating(fm: dict):
-    score = fm.get("rating")
-    if (not isinstance(score, int) or isinstance(score, bool)
-            or not 1 <= score <= 5):
+    score = _local_rating_score(fm.get("rating"))
+    if score is None:
         return None
     revision = fm.get("rating_revision", 0)
     if not isinstance(revision, int) or isinstance(revision, bool) or revision < 0:
@@ -509,6 +535,19 @@ def import_snapshot(vault: Path, snap: dict, previous_ratings=None,
 
 def write_dashboard(vault: Path, snap: dict) -> None:
     lines = ["---", 'title: "Radar Dashboard"', "---", "", "# Radar Dashboard", ""]
+    lines.extend([
+        "## How to rate",
+        "",
+        "Open an item below and enter **1–5** in its **rating** property. "
+        "Add an optional **rating_reason**. Blank means not yet rated.",
+        "",
+        "**1** Skip · **2** Weak match · **3** Useful · **4** Investigate · **5** Propose an experiment",
+        "",
+        "Or reply to either newsletter with the RATE line beneath an item, "
+        "replacing SCORE with your number. Email replies are checked every 15 minutes. "
+        "Both methods update the same rating record; use the current revision when changing an earlier rating.",
+        "",
+    ])
     lines.append("## Items")
     lines.append("")
     for it in snap.get("items", []):

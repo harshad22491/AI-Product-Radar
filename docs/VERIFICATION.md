@@ -53,3 +53,9 @@ The initial academic edition contains seven published ICML 2025 papers, verified
 Apps Script version 5 is deployed. At 05:44 UTC, activation-status.json lists both newsletters with active delivery and reply triggers, runtime-status.json reports success, and Gmail confirms SENT and INBOX for `[TEST] AI Research Radar — 2026-09-16 [2026-09-16-296ad395]`. The reply scan also reports success. All seven academic items imported into Obsidian, preserving their publication records. No user rating was fabricated.
 
 Windows virtual-memory exhaustion briefly prevented deployment; the user freed memory and the deployment then completed. The existing Claude Drive scope blocker still prevents automatic research. The new Fable routine and updated dual-mailer reviewer prompt are prepared locally, but saving them through the Claude client did not complete: it exited after tool discovery without a create/update result. No new task ID or cloud prompt update is claimed. Google activation alone does not prove research execution.
+
+## Rating availability check (2026-09-16)
+
+The live reply reader reports success at 07:14 UTC and scans all three newsletter threads. Both current previews have all fourteen items registered in the canonical snapshot. There are no submitted ratings yet; no test feedback was inserted into the live preference history.
+
+Obsidian item notes now expose blank rating/reason fields and concise instructions. Leaving the score blank is neutral; entering 1–5 as a number or text property produces one deduplicated feedback event. The regression suite proves blank neutrality and a text-property rating's export without inventing live user feedback. All 25 sync tests and 87 gateway scenarios pass, including reply handling for each newsletter. A first actual user reply remains unverified until one is submitted.

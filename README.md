@@ -27,7 +27,7 @@ The original preview was delivered through the Gmail connector. The rewritten pr
 
 ## Read and rate
 
-Open `D:\Paper Recommender\AI Product Radar Vault` as an Obsidian vault. Start with Dashboard or Digests. Each Items note accepts numeric `rating` (1–5) and optional `rating_reason` properties.
+Open `D:\Paper Recommender\AI Product Radar Vault` as an Obsidian vault. Start with Dashboard or Digests. Each Items note shows a blank `rating` field and an optional `rating_reason`. Enter 1–5 to rate; leaving it blank submits nothing. Numeric text from Obsidian's property editor is accepted too. The note includes the current reply command for email ratings.
 
 To rate a newsletter item by email, reply with the template shown under that item, replacing SCORE with 1–5, for example:
 

@@ -129,6 +129,31 @@ class TestExportImport(unittest.TestCase):
         self.assertGreater(r1["imported"], 0)
         self.assertEqual(r2["imported"], 0)  # nothing new on retry
 
+    def test_visible_blank_rating_is_neutral_and_text_property_exports_once(self):
+        ex, vault = self._setup()
+        atomic_write_json(ex / "snapshots" / "snapshot.json", make_snapshot())
+        run_sync(ex, vault)
+        note = next((vault / "Items").glob("*.md"))
+        fm, body = parse_frontmatter(note.read_text(encoding="utf-8"))
+        self.assertIn("rating", fm)
+        self.assertIsNone(fm["rating"])
+        self.assertEqual(fm["rating_reason"], "")
+        self.assertIn("## Rate this idea", body)
+        run_sync(ex, vault)
+        self.assertFalse(list((ex / "feedback").glob("*.json")))
+        # Obsidian can save the newly exposed blank field as a text property.
+        fm["rating"] = "4"
+        fm["rating_reason"] = "Useful for my reports"
+        note.write_text(render_frontmatter(fm) + "\n" + body, encoding="utf-8")
+        run_sync(ex, vault)
+        run_sync(ex, vault)
+        events = [event for path in (ex / "feedback").glob("*.json")
+                  for event in json.loads(path.read_text(encoding="utf-8"))["events"]]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["score"], 4)
+        self.assertEqual(events[0]["base_revision"], 0)
+        self.assertEqual(events[0]["reason"], "Useful for my reports")
+
     def test_snapshot_ordering_is_natural(self):
         ex, vault = self._setup()
         older = make_item(title="Older")
