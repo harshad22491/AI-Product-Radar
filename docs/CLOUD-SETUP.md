@@ -7,7 +7,7 @@
 | Component | Status | Evidence |
 |---|---|---|
 | Local build | Verified | 58 Python tests, 83 gateway scenarios, transport, activation and parity suites pass |
-| Private GitHub repository | Created; release publication pending | Private origin configured |
+| Private GitHub repository | Published privately | Build commit 37d8273 pushed to main; GitHub is source storage only |
 | Private Drive folder and native Google Sheet | Created | Nine database tabs verified through Drive MCP |
 | Apps Script project and triggers | Active | Private version 4; activation, runtime and reply status files verified |
 | Google Form | Optional, not created | Email and Obsidian are the current rating channels |
@@ -116,7 +116,7 @@ Deployment steps, function list, and locking behavior are in `google/README.md`.
 
 - [x] Private Drive folder and native Sheet created
 - [x] Private GitHub repository created
-- [ ] Repository pushed
+- [x] Repository pushed privately
 - [x] Local test suites recorded as passing
 - [x] Apps Script deployed, owner-authorized, and activated; Form optional
 - [x] Revised test digest sent by the deployed gateway and received

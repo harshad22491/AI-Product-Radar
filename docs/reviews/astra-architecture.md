@@ -2,8 +2,8 @@
 
 > Historical build-stage review. See [current verification](../VERIFICATION.md) for resolved findings and remaining blockers.
 
-Reviewed: 2026-09-15  
-Scope: `docs/BUILD-CONTRACT.md` and the repository planning documents  
+Reviewed: 2026-09-15
+Scope: `docs/BUILD-CONTRACT.md` and the repository planning documents
 Decision: **conditional go for implementation; no-go for unattended deployment until the P0 rules below are added and proven**
 
 ## Executive assessment

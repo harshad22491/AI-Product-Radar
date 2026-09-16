@@ -43,7 +43,7 @@ A tested local and private-GitHub repository that defines and implements a cloud
 ## Live status (2026-09-16)
 
 - Local build and gateway verification passed.
-- Private GitHub repository created; release publication pending.
+- Private GitHub build published to main (37d8273); GitHub does not host execution.
 - Private Drive folder and native Sheet created; free Obsidian sync verified.
 - Apps Script deployed and owner-authorized; delivery and reply triggers active.
 - Revised seven-item test email delivered by the deployed gateway and registered for ratings.
