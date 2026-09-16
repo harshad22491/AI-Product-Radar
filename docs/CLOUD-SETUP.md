@@ -145,3 +145,9 @@ The free Obsidian sync is installed as a per-user Windows startup loop, every fi
 - Email not received: check the Deliveries row status, Gmail authorization, and the owner address in Script Properties. Never resend an uncertain delivery without checking the Sent folder.
 - Rating not applied: confirm the exact `RATE` line, the `REV=n` value, and that the reply came from the owner address.
 - Sync problems: rerun `scripts/sync-vault.ps1` with the exchange and vault paths; unsynced edits are reported, not overwritten.
+
+## Academic second mailer (2026-09-16)
+
+AI Research Radar is deployed in the same private Google Apps Script application, version 5. The live activation record lists both mailers; the academic seven-paper test reached SENT and INBOX and imported into the shared Obsidian vault. Delivery is separately tracked per channel at or after 17:00 IST; replies share the canonical rating record. Existing rows with no channel remain product rows. Details and source rules are in [academic mailer](ACADEMIC-MAILER.md).
+
+The new Fable producer and dual-channel Opus reviewer prompts are prepared locally. Their cloud save did not complete because the native client exited after tool discovery; no new routine ID or reviewer update is claimed. The pre-existing Drive scope blocker remains unresolved. Automatic research for the academic edition is not activated.

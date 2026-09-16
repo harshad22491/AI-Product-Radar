@@ -39,7 +39,7 @@ A tested local and private-GitHub repository that defines and implements a cloud
 | [08 Google Apps Script gateway and email](tickets/08-google-gateway.md) | Deployed and Google-authorized; reply/delivery triggers installed; revised gateway test delivered; runtime and reply scan verified |
 | [09 Obsidian vault and synchronization](tickets/09-obsidian-sync.md) | Code written (`radar/sync.py`, `scripts/sync-vault.ps1`); local verification passed |
 | [10 Integration verification and release review](tickets/10-integration-review.md) | Local and gateway checks passed; open for cloud research activation and real rating round trip |
-| [11 Academic-only second mailer](../ACADEMIC-MAILER.md) | Shared gateway and ratings implemented; seven published-paper preview prepared; provider activation blocked |
+| [11 Academic-only second mailer](../ACADEMIC-MAILER.md) | Shared gateway deployed; seven-paper test delivered and in Obsidian; provider activation blocked |
 
 ## Live status (2026-09-16)
 

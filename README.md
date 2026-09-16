@@ -21,7 +21,7 @@ Google Apps Script manages delivery, reply ratings, the canonical Google Sheet, 
 
 Google's owner authorization and delivery/reply triggers were verified on 2026-09-16. Research routines remain paused until Claude's Drive connector passes a real read/write test: the first run and the retry after reconnection both returned insufficient scope. An installed delivery timer does not by itself prove that new editions will be produced. See [verification](docs/VERIFICATION.md) and [cloud setup](docs/CLOUD-SETUP.md) for evidence and remaining work.
 
-The academic extension is built and tested; its Google deployment and test email are pending because local deployment clients hit Windows virtual-memory exhaustion. The original deployed mailer continues running.
+The academic extension is deployed in the same authorized Google service. Its seven-paper test was delivered to SENT and INBOX and synchronized into Obsidian on 2026-09-16. Both mailers have independent daily delivery tracking and shared reply ratings. Automatic research remains blocked by the existing Claude Drive permissions issue.
 
 The original preview was delivered through the Gmail connector. The rewritten preview was sent by the real Google gateway on 2026-09-16; the delivery ledger records sent and Gmail confirms SENT and INBOX. Its seven items are registered for ratings.
 

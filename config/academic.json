@@ -12,17 +12,48 @@
   "primary_model": "Fable 5.1",
   "primary_time": "12:45",
   "independent_reviewer": "claude-opus-5",
-  "review_times": ["13:45", "16:45"],
+  "review_times": [
+    "13:45",
+    "16:45"
+  ],
   "prompt": "prompts/academic.md",
-  "shared_with_product": ["ratings", "preferences", "portfolio-review", "canonical-sheet", "obsidian-vault"],
-  "status": "provider-routine-not-created-client-memory-error-and-existing-drive-scope-block",
+  "shared_with_product": [
+    "ratings",
+    "preferences",
+    "portfolio-review",
+    "canonical-sheet",
+    "obsidian-vault"
+  ],
+  "status": "google-delivery-verified-provider-research-blocked",
   "preferred_primary_sources": [
-    {"name": "ACL Anthology", "url": "https://aclanthology.org/"},
-    {"name": "Proceedings of Machine Learning Research", "url": "https://proceedings.mlr.press/"},
-    {"name": "NeurIPS proceedings", "url": "https://proceedings.neurips.cc/"},
-    {"name": "ACM Digital Library", "url": "https://dl.acm.org/"},
-    {"name": "IEEE Xplore", "url": "https://ieeexplore.ieee.org/"},
-    {"name": "JMLR", "url": "https://www.jmlr.org/"},
-    {"name": "TMLR", "url": "https://jmlr.org/tmlr/"}
-  ]
+    {
+      "name": "ACL Anthology",
+      "url": "https://aclanthology.org/"
+    },
+    {
+      "name": "Proceedings of Machine Learning Research",
+      "url": "https://proceedings.mlr.press/"
+    },
+    {
+      "name": "NeurIPS proceedings",
+      "url": "https://proceedings.neurips.cc/"
+    },
+    {
+      "name": "ACM Digital Library",
+      "url": "https://dl.acm.org/"
+    },
+    {
+      "name": "IEEE Xplore",
+      "url": "https://ieeexplore.ieee.org/"
+    },
+    {
+      "name": "JMLR",
+      "url": "https://www.jmlr.org/"
+    },
+    {
+      "name": "TMLR",
+      "url": "https://jmlr.org/tmlr/"
+    }
+  ],
+  "provider_configuration": "local-prompts-ready-cloud-save-unverified"
 }
