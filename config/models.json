@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Kolkata",
+  "delivery_time": "17:00",
+  "anthropic_api_allowed": false,
+  "automatic_model_upgrade": false,
+  "tasks": [
+    {
+      "role": "research-primary",
+      "provider": "claude-subscription",
+      "model": "Fable 5.1",
+      "producer": "fable",
+      "time": "12:30",
+      "prompt": "prompts/fable.md"
+    },
+    {
+      "role": "independent-validation",
+      "provider": "openai-subscription",
+      "model": "gpt-5.6-sol",
+      "producer": "sol",
+      "time": "13:45",
+      "prompt": "prompts/validator.md"
+    },
+    {
+      "role": "independent-validation-final",
+      "provider": "openai-subscription",
+      "model": "gpt-5.6-sol",
+      "producer": "sol",
+      "time": "16:50",
+      "prompt": "prompts/validator.md"
+    },
+    {
+      "role": "research-fallback",
+      "provider": "openai-subscription",
+      "model": "gpt-5.6-sol",
+      "producer": "sol",
+      "time": "14:30",
+      "prompt": "prompts/sol.md"
+    },
+    {
+      "role": "research-fallback",
+      "provider": "claude-subscription",
+      "model": "Opus",
+      "producer": "opus",
+      "time": "15:45",
+      "prompt": "prompts/opus.md"
+    },
+    {
+      "role": "research-rescue",
+      "provider": "openai-subscription",
+      "model": "gpt-5.6-sol",
+      "producer": "sol",
+      "time": "16:30",
+      "prompt": "prompts/sol.md"
+    },
+    {
+      "role": "github-incremental-review",
+      "provider": "openai-subscription",
+      "model": "gpt-5.6-sol",
+      "producer": "sol",
+      "time": "10:00",
+      "poll_daily": true,
+      "elapsed_days_per_repository": 10,
+      "prompt": "prompts/github-review.md"
+    }
+  ],
+  "optional_complex_review": {
+    "provider": "openai-subscription",
+    "model": "gpt-6-astra",
+    "automatic": false
+  },
+  "activation": "google-triggers-authorized-claude-drive-scope-blocked",
+  "cloud_routing_amendment": {
+    "primary": "Fable 5.1",
+    "independent_review": "claude-opus-5",
+    "review_times": [
+      "13:45",
+      "16:45"
+    ],
+    "reason": "OpenAI cloud schedule creation unavailable; Opus is an approved subscription model",
+    "status": "paused-until-claude-drive-connector-test-passes",
+    "preferred_openai_reviewer": "gpt-5.6-sol"
+  }
+}

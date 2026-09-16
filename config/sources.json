@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "selection_policy": {
+    "digest_size_target": 7,
+    "product_tool_minimum": 5,
+    "security_item_maximum": 1,
+    "security_requires_work_relevance": true,
+    "academic_max_age_calendar_years": 2,
+    "nonacademic_max_age_months": 6,
+    "freshness_reference": "edition_date",
+    "date_basis": "original_publication_or_release",
+    "repeat_requires_new_canonical_release_url": true
+  },
+  "sources": [
+    {
+      "id": "openai-news",
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/",
+      "kind": "product",
+      "access": "public_html",
+      "weight": 1.0
+    },
+    {
+      "id": "anthropic-engineering",
+      "name": "Anthropic Engineering",
+      "url": "https://www.anthropic.com/engineering",
+      "kind": "technique",
+      "access": "public_html",
+      "weight": 0.95
+    },
+    {
+      "id": "google-research",
+      "name": "Google Research Blog",
+      "url": "https://research.google/blog/",
+      "kind": "academic",
+      "access": "public_html",
+      "weight": 0.8
+    },
+    {
+      "id": "github-changelog",
+      "name": "GitHub Changelog",
+      "url": "https://github.blog/changelog/",
+      "kind": "product",
+      "access": "public_html",
+      "weight": 1.05
+    },
+    {
+      "id": "hugging-face-blog",
+      "name": "Hugging Face Blog",
+      "url": "https://huggingface.co/blog",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.0
+    },
+    {
+      "id": "docling-releases",
+      "name": "Docling Releases",
+      "url": "https://github.com/docling-project/docling/releases",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.2
+    },
+    {
+      "id": "markitdown-releases",
+      "name": "MarkItDown Releases",
+      "url": "https://github.com/microsoft/markitdown/releases",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.2
+    },
+    {
+      "id": "pydantic-ai-releases",
+      "name": "Pydantic AI Releases",
+      "url": "https://github.com/pydantic/pydantic-ai/releases",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.15
+    },
+    {
+      "id": "astral-blog",
+      "name": "Astral Blog",
+      "url": "https://astral.sh/blog",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.1
+    },
+    {
+      "id": "duckdb-news",
+      "name": "DuckDB Engineering Blog",
+      "url": "https://duckdb.org/news/",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.15
+    },
+    {
+      "id": "playwright-python-release-notes",
+      "name": "Playwright Python Release Notes",
+      "url": "https://playwright.dev/python/docs/release-notes",
+      "kind": "tool",
+      "access": "public_html",
+      "weight": 1.15
+    },
+    {
+      "id": "tallyprime-developer-release-notes",
+      "name": "TallyPrime Developer Release Notes",
+      "url": "https://help.tallysolutions.com/tallyprime-developer-release-notes/",
+      "kind": "product",
+      "access": "public_html",
+      "weight": 1.3
+    },
+    {
+      "id": "microsoft-excel-blog",
+      "name": "Microsoft Excel Blog",
+      "url": "https://techcommunity.microsoft.com/category/microsoft365/blog/excelblog/all-posts",
+      "kind": "product",
+      "access": "public_html",
+      "weight": 1.25
+    },
+    {
+      "id": "arxiv-agent-workflow-search",
+      "name": "arXiv Agent and Workflow Search",
+      "url": "https://export.arxiv.org/api/query?search_query=all%3Aagent%20OR%20all%3A%22workflow%20automation%22&sortBy=submittedDate&sortOrder=descending&max_results=50",
+      "kind": "academic",
+      "access": "public_atom",
+      "weight": 0.75
+    }
+  ]
+}

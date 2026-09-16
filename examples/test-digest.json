@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "run_id": "descriptive-preview-20260916",
+  "edition_date": "2026-09-16",
+  "generated_at": "2026-09-16T03:21:31.250561Z",
+  "producer": "astra",
+  "model_id": "gpt-6-astra",
+  "kind": "digest",
+  "items": [
+    {
+      "item_id": "RAD-28552df2cd87",
+      "title": "Explore an AI assistant that answers questions about your reports",
+      "source_url": "https://github.com/infiniflow/ragflow/releases/tag/v0.27.2",
+      "published_at": "2026-09-10",
+      "source_type": "product",
+      "user_facing_ai": true,
+      "summary": "RAGFlow is a product for building AI assistants that look through a collection of documents to answer questions. A person can type a question in a chat screen instead of opening several files and searching manually. Its September release includes improvements to document search and the display of spreadsheet sources. The product opportunity for you is a report assistant: a reader asks about information in an approved report and can inspect the material behind the answer. This would need a separate trial. The release notes describe product changes, not evidence that it already understands your reports or checks your calculations.",
+      "why_it_matters": "Branding-Report-Automation could eventually offer readers a question box alongside a finished report. This is an AI feature that an end user would interact with directly, rather than a tool used only by the developer.",
+      "application_example": "Imagine a fictional monthly report with a sales table and a note explaining that a promotion ended in August. A manager asks: What explanation does this report give for the change in sales? The proposed assistant would retrieve that note, explain it simply and point back to its source. If the report gives no explanation, it should say so instead of inventing a reason.",
+      "evidence_label": "official-release-notes; proposed-application-not-tested",
+      "repository": "Branding-Report-Automation",
+      "guidance": [
+        "Where: Start with a separate question-and-answer screen for a finished, made-up Branding-Report-Automation report.",
+        "Try: Give the assistant three fictional reports and ten questions whose answers you already know. Include two questions the documents cannot answer.",
+        "Benefit: A reader could find a relevant explanation without asking you to locate the right paragraph or spreadsheet every time.",
+        "Effort: Allow one to two days for a basic demonstration. Hosting, model usage and setup may have costs; no new service or payment is being activated by this suggestion.",
+        "Check: For every answer, open the cited source and confirm it supports the wording. The assistant should admit when the documents do not provide an answer."
+      ],
+      "topics": [
+        "user-facing-ai-products",
+        "document-intelligence",
+        "reporting"
+      ],
+      "repository_evidence": "Proposed application based on the sanitized portfolio brief; not an existing feature or a tested integration."
+    },
+    {
+      "item_id": "RAD-3751a967d486",
+      "title": "Turn a PDF statement into information you can check and reuse",
+      "source_url": "https://github.com/docling-project/docling/releases/tag/v2.126.0",
+      "published_at": "2026-09-04",
+      "source_type": "tool",
+      "summary": "Docling is a tool that helps software read documents. Think of it as an assistant that takes a PDF and separates its contents into useful pieces, such as headings, paragraphs and table rows. Its September release adds another built-in way to read PDF files. For your work, the useful question is whether this route can copy information from a statement more reliably, especially when a table continues onto another page. The release notes confirm the new reading option; they do not prove that it works better on your particular documents. A small comparison would establish that.",
+      "why_it_matters": "Daily-Position-Automation could benefit if less time is spent correcting information before it reaches a spreadsheet. This is a proposed improvement to document intake, not a change already made to your project.",
+      "evidence_label": "official-release-notes",
+      "repository": "Daily-Position-Automation",
+      "guidance": [
+        "Where: Try this at the point where Daily-Position-Automation receives a PDF, before any figures are used in a report.",
+        "Try: Give a developer five made-up statements with different layouts. Have them produce a spreadsheet from each using the new reader and compare it with the current method.",
+        "Benefit: If fewer rows need correcting, preparing a report could involve less copying and checking by hand. Measure that saving rather than assuming it.",
+        "Effort: Allow about half a day for an initial comparison. Supporting all document layouts would be a separate piece of work.",
+        "Check: Count the rows and compare every amount with the original page. Keep the trial only if it preserves the figures and makes review easier."
+      ],
+      "topics": [
+        "document extraction",
+        "pdf",
+        "reconciliation"
+      ],
+      "source_dates": {
+        "released": "2026-09-04"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "Imagine a made-up three-page statement containing ten entries. One entry is split between pages two and three. The trial would ask Docling to produce a table, then check that the split entry appears once, in the right place, with the correct amount. Your existing calculations would remain responsible for checking totals.",
+      "user_facing_ai": false
+    },
+    {
+      "item_id": "RAD-dcc26a7b8319",
+      "title": "Make an AI assistant wait for a clear approval before taking action",
+      "source_url": "https://github.com/pydantic/pydantic-ai/releases/tag/v2.42.0",
+      "published_at": "2026-09-09",
+      "source_type": "tool",
+      "summary": "Pydantic AI is a building tool for AI assistants that carry out tasks. One of its features lets an assistant pause and wait for a person to approve an action. The September release checks more carefully that the approval information is in the expected form. In everyday terms, it helps distinguish a properly recorded decision from a missing or incorrectly prepared answer. This is useful when an assistant prepares something important, such as an invoice, but a person must decide whether to proceed. It does not establish who has authority to approve, or guarantee that the invoice itself is correct.",
+      "why_it_matters": "Burgundy-Tally-Automation is a suitable place to explore a clear handover between an AI-prepared draft and human review. The proposal would make that handover easier to check before considering any action in Tally.",
+      "evidence_label": "official-release-notes",
+      "repository": "Burgundy-Tally-Automation",
+      "guidance": [
+        "Where: Test the review step between preparing a draft invoice and handing it to the next stage of Burgundy-Tally-Automation.",
+        "Try: Create four made-up decisions: approval, rejection, no answer and an incomplete answer. Record what happens to the draft in each case.",
+        "Benefit: A clearer review boundary could make it easier to see which drafts need attention and which have a valid recorded decision.",
+        "Effort: Allow one to two hours for a small demonstration, with additional work later for reviewer identity and permissions.",
+        "Check: Only the correctly approved draft should pass the demonstration checkpoint. Every other case should remain blocked, with an understandable explanation."
+      ],
+      "topics": [
+        "approval workflow",
+        "validation",
+        "agents"
+      ],
+      "source_dates": {
+        "released": "2026-09-09"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "Imagine an assistant prepares a draft invoice for a fictional supplier. The reviewer can choose Approve or Reject. If no decision arrives, or the decision is incomplete, the trial should leave the draft waiting. It should never treat silence as approval or post the invoice during this experiment.",
+      "user_facing_ai": false
+    },
+    {
+      "item_id": "RAD-cf47688d2646",
+      "title": "Check website workflows without the checks interfering with each other",
+      "source_url": "https://github.com/microsoft/playwright/releases/tag/v1.63.0",
+      "published_at": "2026-09-04",
+      "source_type": "tool",
+      "summary": "Playwright lets a developer automatically try the same actions a person would perform in a website, such as signing in, opening a request and clicking Approve. Its new named locks allow certain checks to take turns when they use the same account or shared setting. Picture two people trying to edit the same form at once: each can accidentally disturb the other. The new feature helps avoid that situation in automated checks. It could make a failure easier to interpret, because there is less chance that the checking process itself caused the problem.",
+      "why_it_matters": "GHADC includes browser workflows with different roles and approval steps. Those are sensible places to evaluate the feature, although we have not established that overlapping checks are currently a problem in your project.",
+      "evidence_label": "official-release-notes",
+      "repository": "GHADC",
+      "guidance": [
+        "Where: Start with a test copy of one GHADC approval journey and a made-up manager account.",
+        "Try: Ask a developer to run two checks that deliberately share that account, first together and then using the new turn-taking feature.",
+        "Benefit: If shared-account clashes disappear, you could spend less time investigating failures caused by the tests rather than the website.",
+        "Effort: Allow one to two hours to build and repeat the two-check demonstration.",
+        "Check: Repeat both versions several times. Confirm that taking turns removes the interference while still detecting a deliberately broken approval step."
+      ],
+      "topics": [
+        "browser testing",
+        "test isolation",
+        "approval workflow"
+      ],
+      "source_dates": {
+        "released": "2026-09-04"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "Suppose one check tests whether a manager can approve a request, while another changes the same test manager's permissions. Running them together could create a misleading failure. In a small demonstration, the second check would wait until the first had finished using that shared account.",
+      "user_facing_ai": false
+    },
+    {
+      "item_id": "RAD-78878ed59211",
+      "title": "Explain why a report could not download its source information",
+      "source_url": "https://github.com/duckdb/duckdb/releases/tag/v1.5.5",
+      "published_at": "2026-07-22",
+      "source_type": "product",
+      "summary": "DuckDB is a tool for working with tables of information. Its July update records more detail when an attempt to retrieve data from another service fails. Imagine a report that stops halfway through preparation: a useful explanation should help distinguish a connection problem from a problem in the figures. The additional records may give a developer better clues about what happened. They are still technical records, so someone would need to turn them into a short, readable message for the person preparing the report. The update alone does not add that friendly message.",
+      "why_it_matters": "Branding-Report-Automation could use this in an experiment involving downloaded sales data. It is relevant only if that part of the workflow uses, or would reasonably adopt, DuckDB.",
+      "evidence_label": "official-release-notes",
+      "repository": "Branding-Report-Automation",
+      "guidance": [
+        "Where: Try this in a separate copy of the step that retrieves sales information for Branding-Report-Automation.",
+        "Try: Use a made-up sales file and deliberately interrupt its download. Ask a developer to inspect the recorded cause and prepare a plain-language message.",
+        "Benefit: The person preparing the report could know what to try next instead of wondering whether the report calculations are wrong.",
+        "Effort: Allow about two hours for a focused demonstration if DuckDB is already a suitable fit.",
+        "Check: Test both a failed download and a successful one. The explanation should match the real problem, and a successful report should keep exactly the same figures."
+      ],
+      "topics": [
+        "analytics",
+        "http diagnostics",
+        "reporting"
+      ],
+      "source_dates": {
+        "released": "2026-07-22"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "In a test, interrupt the connection while downloading a made-up sales table. Instead of showing only that the report failed, the proposed screen could say: The sales file could not be downloaded. Please check the connection and try again. That explanation must be based on the actual recorded failure.",
+      "user_facing_ai": false
+    },
+    {
+      "item_id": "RAD-57c638e03be4",
+      "title": "Help coffee customers understand their recommendations with a simple chart",
+      "source_url": "https://github.com/streamlit/streamlit/releases/tag/1.64.0",
+      "published_at": "2026-09-15",
+      "source_type": "product",
+      "summary": "Streamlit is a tool for building small interactive applications. Its September release adds direct support for another family of charts, called ECharts. The practical opportunity is to make information easier to explore on a screen. For your coffee recommendation project, a chart could help someone compare the coffees being suggested and see how their stated preferences relate to those choices. The chart would display information supplied by your application; it would not create better recommendations by itself. This is a presentation improvement that could make an existing recommendation experience more understandable.",
+      "why_it_matters": "forty-degrees could use a small comparison view to explain its recommendations. That would give users more context before they choose a coffee or rate a suggestion.",
+      "evidence_label": "official-release-notes",
+      "repository": "forty-degrees",
+      "guidance": [
+        "Where: Add a separate demonstration page alongside the recommendation results in forty-degrees.",
+        "Try: Use ten fictional coffees and a few made-up preference histories. Display three recommendations in a simple comparison chart.",
+        "Benefit: Customers may find it easier to understand and respond to a suggestion when they can compare the options visually.",
+        "Effort: Allow about half a day for a basic screen. Test a small number of clear charts rather than building a full dashboard.",
+        "Check: Ask someone unfamiliar with the project to explain the choices after using the screen. Check that every displayed value matches the underlying example data."
+      ],
+      "topics": [
+        "streamlit",
+        "visualization",
+        "recommendations"
+      ],
+      "source_dates": {
+        "released": "2026-09-15"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "Imagine a customer says they prefer a mild roast. The trial could show three suggested coffees side by side, with simple labels for roast level and the customer's earlier ratings. The customer could select a coffee to see why it was included. All labels would come from information actually held by the application.",
+      "user_facing_ai": false
+    },
+    {
+      "item_id": "RAD-3f3d931d728a",
+      "title": "Keep useful article text and links when preparing a news email",
+      "source_url": "https://github.com/microsoft/markitdown/releases/tag/v0.1.8b2",
+      "published_at": "2026-09-14",
+      "source_type": "tool",
+      "summary": "MarkItDown turns different kinds of documents into text that other software can use. An experimental September release improves how it handles news feeds, which are the automatically updated lists of articles that many websites publish. The changes aim to preserve fuller article content and handle certain links more correctly. For a newsletter, that could mean less missing context and fewer unusable links before summarisation begins. This release is a beta, meaning it is still being tested. It should be evaluated separately before you consider using it in a daily service.",
+      "why_it_matters": "Daily-News-Brief could compare the beta with its current article-reading step. Better input may help its summaries, but preserving more text does not by itself prove that an AI summary will be accurate.",
+      "evidence_label": "official-prerelease-notes",
+      "repository": "Daily-News-Brief",
+      "guidance": [
+        "Where: Try this before Daily-News-Brief sends article text to the summarisation stage.",
+        "Try: Prepare three small example feeds containing full articles and different link styles. Compare what the current reader and the beta retain.",
+        "Benefit: Keeping the right text and working links could make the final email more useful and easier for you to verify.",
+        "Effort: Allow about half a day for a separate trial. Keep the daily service on its existing version until the results justify a change.",
+        "Check: Compare the retained paragraphs and destination of every link. Reject the trial if it silently drops text or produces misleading summaries."
+      ],
+      "topics": [
+        "rss",
+        "content conversion",
+        "pre-release"
+      ],
+      "source_dates": {
+        "released": "2026-09-14"
+      },
+      "repository_evidence": "Inference only from the user-provided sanitized description; no private repository was read.",
+      "application_example": "Create a sample news feed whose article contains a headline, three paragraphs and a link written as a short website path. The trial would check that all three paragraphs survive and that the link opens the intended page. Then compare the resulting newsletter draft with the original article.",
+      "user_facing_ai": false
+    }
+  ]
+}

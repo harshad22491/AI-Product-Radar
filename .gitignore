@@ -1,0 +1,17 @@
+.scratch/
+.ori/
+.env
+.env.*
+!.env.example
+credentials*.json
+deployment.local.json
+state/
+vault/
+exchange/
+out/
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.clasp.json
+*.log

@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "matching": {
+    "case_sensitive": false,
+    "downweight_multiplier": 0.25,
+    "require_work_relevance": true
+  },
+  "topics": [
+    {
+      "id": "python-automation",
+      "name": "Python automation and tooling",
+      "keywords": [
+        "Python",
+        "Python 3.11",
+        "standard library",
+        "CLI",
+        "SDK",
+        "package management",
+        "dependency management",
+        "uv",
+        "Ruff",
+        "type checking",
+        "unittest",
+        "automation script"
+      ],
+      "downweights": [
+        "beginner Python course",
+        "syntax tutorial",
+        "web framework tutorial",
+        "competitive programming",
+        "cryptocurrency bot"
+      ]
+    },
+    {
+      "id": "excel-workflows",
+      "name": "Excel and spreadsheet workflows",
+      "keywords": [
+        "Excel",
+        "XLSX",
+        "spreadsheet",
+        "workbook",
+        "worksheet",
+        "Office Scripts",
+        "Power Query",
+        "openpyxl",
+        "formula",
+        "pivot table",
+        "CSV import",
+        "recalculation"
+      ],
+      "downweights": [
+        "Excel championship",
+        "template gallery",
+        "spreadsheet styling",
+        "consumer budgeting tips",
+        "presentation design"
+      ]
+    },
+    {
+      "id": "tally-accounting",
+      "name": "Tally and accounting automation",
+      "keywords": [
+        "TallyPrime",
+        "Tally",
+        "TDL",
+        "XML integration",
+        "accounting automation",
+        "voucher",
+        "ledger",
+        "reconciliation",
+        "invoice processing",
+        "accounts payable",
+        "accounts receivable",
+        "GST",
+        "bank statement"
+      ],
+      "downweights": [
+        "stock picks",
+        "cryptocurrency",
+        "personal finance advice",
+        "tax opinion",
+        "generic bookkeeping course"
+      ]
+    },
+    {
+      "id": "agents-workflows",
+      "name": "AI agents and reliable workflows",
+      "keywords": [
+        "AI agent",
+        "agentic workflow",
+        "tool use",
+        "function calling",
+        "orchestration",
+        "handoff",
+        "human in the loop",
+        "Model Context Protocol",
+        "MCP",
+        "structured output",
+        "long-running agent",
+        "evaluation harness"
+      ],
+      "downweights": [
+        "AGI speculation",
+        "model rumor",
+        "benchmark leaderboard only",
+        "prompt collection",
+        "autonomous weapons"
+      ]
+    },
+    {
+      "id": "document-intelligence",
+      "name": "Document and table intelligence",
+      "keywords": [
+        "document conversion",
+        "document intelligence",
+        "OCR",
+        "table extraction",
+        "PDF extraction",
+        "invoice extraction",
+        "Docling",
+        "MarkItDown",
+        "Markdown conversion",
+        "layout analysis",
+        "structured document"
+      ],
+      "downweights": [
+        "image generation",
+        "creative writing",
+        "PDF editor review",
+        "consumer scanner app",
+        "stock photography"
+      ]
+    },
+    {
+      "id": "local-data",
+      "name": "Local analytics and data pipelines",
+      "keywords": [
+        "DuckDB",
+        "SQL",
+        "local analytics",
+        "embedded database",
+        "Parquet",
+        "CSV",
+        "data pipeline",
+        "ETL",
+        "query performance",
+        "data validation"
+      ],
+      "downweights": [
+        "cloud data warehouse pricing",
+        "adtech analytics",
+        "blockchain database",
+        "social media analytics",
+        "data science competition"
+      ]
+    },
+    {
+      "id": "developer-products",
+      "name": "Developer products and testing tools",
+      "keywords": [
+        "release notes",
+        "changelog",
+        "developer tool",
+        "GitHub Copilot",
+        "Playwright",
+        "browser automation",
+        "end-to-end test",
+        "API testing",
+        "Pydantic AI",
+        "observability",
+        "migration guide",
+        "breaking change"
+      ],
+      "downweights": [
+        "funding announcement",
+        "conference promotion",
+        "hiring announcement",
+        "brand campaign",
+        "community milestone"
+      ]
+    },
+    {
+      "id": "applied-ai-research",
+      "name": "Applied AI research and evaluations",
+      "keywords": [
+        "agent evaluation",
+        "workflow induction",
+        "tool-use benchmark",
+        "reliability",
+        "grounded generation",
+        "information extraction",
+        "human-computer interaction",
+        "software engineering",
+        "reproducible evaluation",
+        "error analysis",
+        "ablation study"
+      ],
+      "downweights": [
+        "leaderboard claim",
+        "position paper",
+        "survey without implementation",
+        "medical diagnosis",
+        "military application"
+      ]
+    },
+    {
+      "id": "work-relevant-security",
+      "name": "Work-relevant security and privacy",
+      "keywords": [
+        "credential handling",
+        "prompt injection",
+        "tool permission",
+        "sandbox",
+        "supply chain security",
+        "dependency vulnerability",
+        "data exfiltration",
+        "OAuth",
+        "secret scanning",
+        "agent containment"
+      ],
+      "downweights": [
+        "nation-state",
+        "malware campaign",
+        "zero-day roundup",
+        "consumer identity theft",
+        "security policy"
+      ]
+    }
+  ]
+}
