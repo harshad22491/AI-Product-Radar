@@ -41,3 +41,13 @@ Resolved defects included mismatched producer schemas, drafts consumed before de
 ## Practical limits
 
 Provider jobs and Google triggers can run later than requested. Unknown email outcomes require reconciliation before retry. Large-mailbox history pagination and broader Unicode URL canonicalization are not certified by the current fixtures. Model review and schema validation do not guarantee factual accuracy. See [cloud setup](CLOUD-SETUP.md) for the remaining activation steps.
+
+## Second mailer: academic papers (2026-09-16)
+
+AI Research Radar is implemented with the same seven-item minimum, descriptive examples, five application steps, reply ratings, shared preferences and Obsidian archive. It requires formally published academic papers within two calendar years, plus a paper-backed end-user product concept. Separate channel delivery records allow both emails on the same day without duplicate sends.
+
+63 Python tests and 87 gateway scenarios pass, along with Gmail transport, activation and cross-runtime checks for both real previews. New scenarios cover mixed-source rejection, missing publication evidence, preprint-host rejection, independent same-day sends, uncertain-send isolation, academic rating replies and preserving publication metadata.
+
+The initial academic edition contains seven published ICML 2025 papers, verified against PMLR records. Its source notes distinguish publisher evidence from proposed portfolio applications. The local HTML is rendered in `out/academic-preview/academic-digest.html`.
+
+Cloud deployment and the academic test email are pending: the local clients cannot start reliably while Windows reports exhausted virtual memory. The Claude runtime explicitly reported Windows error 1455 (paging file too small); it also failed in its documented safe mode. No academic cloud routine was created and the existing provider routines were not changed. The original cloud service remains authorized; its pre-existing Drive scope blocker still prevents automatic research.

@@ -139,6 +139,56 @@ class DomainTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "sanitized repository"):
             validate_bundle(bundle)
 
+    def test_academic_newsletter_requires_academic_published_papers(self):
+        bundle = make_bundle()
+        bundle["newsletter"] = "academic"
+        for number, item in enumerate(bundle["items"]):
+            item["source_type"] = "academic"
+            item["source_url"] = f"https://journals.example.test/paper-{number}"
+            item["item_id"] = stable_item_id(item["source_url"])
+            item["published_at"] = "2025-08-01"
+            item["publication"] = {
+                "status": "published",
+                "venue": "Journal of Useful Systems",
+                "publication_url": item["source_url"],
+            }
+        normalized = validate_bundle(bundle)
+        self.assertEqual(normalized["newsletter"], "academic")
+        self.assertEqual(normalized["items"][0]["publication"]["venue"], "Journal of Useful Systems")
+
+    def test_academic_newsletter_rejects_mixed_missing_preprint_and_old_items(self):
+        bundle = make_bundle()
+        bundle["newsletter"] = "academic"
+        for number, item in enumerate(bundle["items"]):
+            item["source_type"] = "academic"
+            item["source_url"] = f"https://journals.example.test/paper-{number}"
+            item["item_id"] = stable_item_id(item["source_url"])
+            item["publication"] = {"status": "published", "venue": "Conference Proceedings", "publication_url": item["source_url"]}
+        bundle["items"][0].pop("publication")
+        with self.assertRaisesRegex(ValueError, "publication.*required"):
+            validate_bundle(bundle)
+        bundle["items"][0]["publication"] = {"status": "published", "venue": "Conference Proceedings", "publication_url": bundle["items"][0]["source_url"]}
+        bundle["items"][1]["source_type"] = "product"
+        with self.assertRaisesRegex(ValueError, "requires academic"):
+            validate_bundle(bundle)
+        bundle["items"][1]["source_type"] = "academic"
+        bundle["items"][1]["source_url"] = "https://arxiv.org/abs/1234.5678"
+        bundle["items"][1]["item_id"] = stable_item_id(bundle["items"][1]["source_url"])
+        bundle["items"][1]["publication"]["publication_url"] = bundle["items"][1]["source_url"]
+        with self.assertRaisesRegex(ValueError, "preprint"):
+            validate_bundle(bundle)
+        bundle["items"][1]["source_url"] = "https://www.arxiv.org/abs/1234.5678"
+        bundle["items"][1]["item_id"] = stable_item_id(bundle["items"][1]["source_url"])
+        bundle["items"][1]["publication"]["publication_url"] = bundle["items"][1]["source_url"]
+        with self.assertRaisesRegex(ValueError, "preprint"):
+            validate_bundle(bundle)
+        bundle["items"][1]["source_url"] = "https://journals.example.test/old"
+        bundle["items"][1]["item_id"] = stable_item_id(bundle["items"][1]["source_url"])
+        bundle["items"][1]["publication"]["publication_url"] = bundle["items"][1]["source_url"]
+        bundle["items"][1]["published_at"] = "2024-08-01"
+        with self.assertRaisesRegex(ValueError, "freshness window"):
+            validate_bundle(bundle)
+
 
 if __name__ == "__main__":
     unittest.main()

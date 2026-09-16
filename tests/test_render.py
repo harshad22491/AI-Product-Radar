@@ -54,6 +54,24 @@ class RenderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             render_text(bundle)
 
+    def test_academic_rendering_uses_research_heading_and_publication(self):
+        bundle = make_bundle()
+        bundle["newsletter"] = "academic"
+        for number, item in enumerate(bundle["items"]):
+            item["source_type"] = "academic"
+            item["source_url"] = f"https://journals.example.test/paper-{number}"
+            from radar.domain import stable_item_id
+            item["item_id"] = stable_item_id(item["source_url"])
+            item["publication"] = {"status": "published", "venue": "Systems Journal", "publication_url": item["source_url"]}
+        html = render_html(bundle)
+        text = render_text(bundle)
+        self.assertIn("AI Research Radar", html)
+        self.assertIn("Systems Journal", html)
+        self.assertIn("Open publication", html)
+        self.assertIn("AI Research Radar", text)
+        self.assertIn("Publication: Systems Journal", text)
+        self.assertIn("Proposed paper-backed product", text)
+
 
 if __name__ == "__main__":
     unittest.main()

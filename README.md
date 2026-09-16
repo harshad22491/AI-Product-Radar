@@ -2,6 +2,8 @@
 
 A private research newsletter for harshad422@gmail.com, with a separate free Obsidian vault. Delivery target: every day at **17:00 Asia/Kolkata**, including weekends. Google checks every five minutes; exact start time is not guaranteed.
 
+There are two separate mailers: **AI Product Radar** covers products, tools and techniques; **AI Research Radar** contains only formally published, peer-reviewed academic papers from the past two calendar years. Both use the same descriptive writing, seven-item minimum, practical examples, five application steps and reply ratings. The academic edition includes at least one proposed, paper-backed AI product for an end user. See [academic mailer](docs/ACADEMIC-MAILER.md).
+
 ## What each edition contains
 
 - At least seven findings, including **one genuine AI product an end user can interact with**, such as a recommendation service or a document question-answer assistant.
@@ -18,6 +20,8 @@ Google Apps Script manages delivery, reply ratings, the canonical Google Sheet, 
 ## Operational status
 
 Google's owner authorization and delivery/reply triggers were verified on 2026-09-16. Research routines remain paused until Claude's Drive connector passes a real read/write test: the first run and the retry after reconnection both returned insufficient scope. An installed delivery timer does not by itself prove that new editions will be produced. See [verification](docs/VERIFICATION.md) and [cloud setup](docs/CLOUD-SETUP.md) for evidence and remaining work.
+
+The academic extension is built and tested; its Google deployment and test email are pending because local deployment clients hit Windows virtual-memory exhaustion. The original deployed mailer continues running.
 
 The original preview was delivered through the Gmail connector. The rewritten preview was sent by the real Google gateway on 2026-09-16; the delivery ledger records sent and Gmail confirms SENT and INBOX. Its seven items are registered for ratings.
 

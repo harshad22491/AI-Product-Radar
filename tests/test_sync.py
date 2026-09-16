@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from radar.sync import (
     SyncError, atomic_write_json, ensure_vault, export_ratings, import_snapshot,
-    parse_frontmatter, render_frontmatter, render_item_note, run_sync, safe_path, safe_slug,
+    parse_frontmatter, render_frontmatter, render_item_note, render_digest_note, run_sync, safe_path, safe_slug,
     validate_snapshot, VAULT_DIRS,
 )
 
@@ -63,6 +63,22 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(fm["n"], 3)
         self.assertIs(fm["flag"], True)
         self.assertEqual(fm["list"], ["a", 1])
+
+    def test_item_note_preserves_publication_metadata(self):
+        item = make_item()
+        item["publication"] = {
+            "status": "published",
+            "venue": "Systems Journal",
+            "publication_url": "https://example.com/a",
+        }
+        note = render_item_note(item, None, None)
+        fm, body = parse_frontmatter(note)
+        self.assertEqual(fm["publication"]["venue"], "Systems Journal")
+        self.assertIn("Publication: [Systems Journal](https://example.com/a)", body)
+
+    def test_academic_digest_note_title_keeps_edition_date(self):
+        note = render_digest_note({"run_id": "academic-1", "edition_date": "2026-09-16", "newsletter": "academic", "items": []}, None)
+        self.assertIn("# AI Research Radar 2026-09-16", note)
 
 
 class TestValidation(unittest.TestCase):

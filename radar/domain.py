@@ -18,6 +18,7 @@ _BUNDLE_KEYS = {
     "producer",
     "model_id",
     "kind",
+    "newsletter",
     "items",
 }
 _ITEM_KEYS = {
@@ -36,10 +37,13 @@ _ITEM_KEYS = {
     "repository_evidence",
     "user_facing_ai",
     "application_example",
+    "publication",
 }
-_REQUIRED_ITEM_KEYS = _ITEM_KEYS - {"source_dates", "repository_evidence", "user_facing_ai", "application_example"}
+_REQUIRED_ITEM_KEYS = _ITEM_KEYS - {"source_dates", "repository_evidence", "user_facing_ai", "application_example", "publication"}
 _PRODUCERS = {"fable", "astra", "opus", "sol"}
 _SOURCE_TYPES = {"academic", "product", "tool", "technique"}
+_NEWSLETTERS = {"product", "academic"}
+_PREPRINT_HOSTS = {"arxiv.org", "biorxiv.org", "medrxiv.org"}
 _GUIDANCE_LABELS = ("Where", "Try", "Benefit", "Effort", "Check")
 _RUN_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _ITEM_ID_RE = re.compile(r"^RAD-[0-9a-f]{12}$")
@@ -230,7 +234,7 @@ def validate_bundle(bundle: dict) -> dict:
     unknown = set(bundle) - _BUNDLE_KEYS
     if unknown:
         _fail("bundle", f"unknown field(s): {', '.join(sorted(map(str, unknown)))}")
-    missing = _BUNDLE_KEYS - set(bundle)
+    missing = (_BUNDLE_KEYS - {"newsletter"}) - set(bundle)
     if missing:
         _fail("bundle", f"missing field(s): {', '.join(sorted(missing))}")
     if not isinstance(bundle["schema_version"], int) or isinstance(bundle["schema_version"], bool) or bundle["schema_version"] != 1:
@@ -252,6 +256,10 @@ def validate_bundle(bundle: dict) -> dict:
     kind = _text(bundle["kind"], "kind")
     if kind != "digest":
         _fail("kind", "must be digest")
+    newsletter_present = "newsletter" in bundle
+    newsletter = _text(bundle.get("newsletter", "product"), "newsletter")
+    if newsletter not in _NEWSLETTERS:
+        _fail("newsletter", "must be one of academic, product")
     items = bundle["items"]
     if not isinstance(items, list):
         _fail("items", "must be a list")
@@ -326,6 +334,36 @@ def validate_bundle(bundle: dict) -> dict:
             "topics": normalized_topics,
             "user_facing_ai": raw_item.get("user_facing_ai", False),
         }
+        if "publication" in raw_item:
+            publication = raw_item["publication"]
+            if not isinstance(publication, dict):
+                _fail(f"{path}.publication", "must be an object")
+            unknown_publication = set(publication) - {"status", "venue", "publication_url"}
+            if unknown_publication:
+                _fail(f"{path}.publication", f"unknown field(s): {', '.join(sorted(map(str, unknown_publication)))}")
+            for field in ("status", "venue", "publication_url"):
+                if field not in publication:
+                    _fail(f"{path}.publication.{field}", "is required")
+            status = _text(publication["status"], f"{path}.publication.status")
+            if status != "published":
+                _fail(f"{path}.publication.status", "must be published")
+            venue = _text(publication["venue"], f"{path}.publication.venue", max_length=300)
+            publication_url = canonical_url(publication["publication_url"])
+            publication_host = urlsplit(publication_url).hostname.lower().rstrip(".")
+            if any(publication_host == host or publication_host.endswith(f".{host}") for host in _PREPRINT_HOSTS):
+                _fail(f"{path}.publication.publication_url", "must not be a preprint host")
+            if publication_url != source:
+                _fail(f"{path}.publication.publication_url", "must canonically equal source_url")
+            normalized_item["publication"] = {
+                "status": status,
+                "venue": venue,
+                "publication_url": publication_url,
+            }
+        if newsletter == "academic":
+            if source_type != "academic":
+                _fail(f"{path}.source_type", "academic newsletter requires academic sources")
+            if "publication" not in normalized_item:
+                _fail(f"{path}.publication", "is required for academic newsletter")
         if not isinstance(normalized_item["user_facing_ai"], bool):
             _fail(f"{path}.user_facing_ai", "must be a boolean")
         if "application_example" in raw_item:
@@ -347,7 +385,7 @@ def validate_bundle(bundle: dict) -> dict:
     if not any(item["user_facing_ai"] for item in normalized_items):
         _fail("items", "must contain at least one user-facing AI product")
 
-    return {
+    normalized_bundle = {
         "schema_version": 1,
         "run_id": run_id,
         "edition_date": edition.isoformat(),
@@ -357,3 +395,6 @@ def validate_bundle(bundle: dict) -> dict:
         "kind": "digest",
         "items": copy.deepcopy(normalized_items),
     }
+    if newsletter_present:
+        normalized_bundle["newsletter"] = newsletter
+    return normalized_bundle

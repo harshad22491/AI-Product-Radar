@@ -35,6 +35,13 @@ var SCHEMA_VERSION = 1;
 var MIN_ITEMS = 7;
 var OWNER_EMAIL_DEFAULT = 'harshad422@gmail.com';
 var DIGEST_SUBJECT_PREFIX = 'AI Product Radar';
+var NEWSLETTERS = ['product', 'academic'];
+function newsletterName(newsletter) {
+  return newsletter === 'academic' ? 'AI Research Radar' : DIGEST_SUBJECT_PREFIX;
+}
+function newsletterProperty(key, newsletter) {
+  return newsletter === 'academic' ? key + '_ACADEMIC' : key;
+}
 var DISPATCH_HOUR_IST = 17; // never send before 17:00 Asia/Kolkata
 
 var PRODUCERS = ['fable', 'astra', 'opus', 'sol'];
@@ -52,10 +59,10 @@ var VERDICTS = ['approved', 'rejected'];
 var BLOCKING_DELIVERY_STATUSES = ['claimed', 'sent', 'uncertain'];
 
 var BUNDLE_KEYS = ['schema_version', 'run_id', 'edition_date', 'generated_at', 'producer',
-  'model_id', 'kind', 'items'];
+  'model_id', 'kind', 'items', 'newsletter'];
 var ITEM_KEYS = ['item_id', 'title', 'source_url', 'published_at', 'source_type', 'summary',
   'why_it_matters', 'evidence_label', 'repository', 'guidance', 'topics', 'source_dates',
-  'repository_evidence', 'user_facing_ai', 'application_example'];
+  'repository_evidence', 'user_facing_ai', 'application_example', 'publication'];
 var ATTESTATION_KEYS = ['schema_version', 'run_id', 'candidate_run_id', 'candidate_sha256',
   'validator', 'model_id', 'verdict', 'checked_at', 'kind'];
 
@@ -86,7 +93,7 @@ var SHEET_SCHEMAS = {
   Items: ['item_id', 'title', 'source_url', 'published_at', 'source_type', 'summary',
     'why_it_matters', 'evidence_label', 'repository', 'guidance_where', 'guidance_try',
     'guidance_benefit', 'guidance_effort', 'guidance_check', 'topics',
-    'first_delivered_edition_date', 'run_id', 'added_at', 'user_facing_ai', 'application_example'],
+    'first_delivered_edition_date', 'run_id', 'added_at', 'user_facing_ai', 'application_example', 'publication_json'],
   RatingEvents: ['event_id', 'item_id', 'score', 'reason', 'origin', 'base_revision',
     'created_at', 'status', 'recorded_at'],
   CurrentRatings: ['item_id', 'score', 'reason', 'revision', 'last_event_id', 'updated_at'],
@@ -95,7 +102,7 @@ var SHEET_SCHEMAS = {
   Runs: ['run_id', 'producer', 'model_id', 'edition_date', 'generated_at', 'item_count',
     'status', 'validation_notes', 'processed_at'],
   Deliveries: ['edition_date', 'run_id', 'recipient', 'subject', 'item_ids', 'delivery_key',
-    'status', 'is_test', 'created_at', 'updated_at'],
+    'status', 'is_test', 'created_at', 'updated_at', 'newsletter'],
   Sources: ['source_url', 'canonical_url', 'item_id', 'first_seen_edition_date'],
   Preferences: ['key', 'value', 'updated_at']
 };
@@ -366,6 +373,16 @@ function validateItem(item, editionDate) {
   if (item.application_example !== undefined && !isNonEmptyTrimmedString(item.application_example, 4000)) errors.push('application_example must be a nonempty string');
   if (item.user_facing_ai === true && !isNonEmptyTrimmedString(item.application_example, 4000)) errors.push('user-facing AI products require a concrete application_example');
 
+  if (item.publication !== undefined) {
+    var pub = item.publication;
+    if (!pub || typeof pub !== 'object' || Array.isArray(pub)
+        || Object.keys(pub).some(function(k) { return ['status','venue','publication_url'].indexOf(k) === -1; })
+        || pub.status !== 'published' || !isNonEmptyTrimmedString(pub.venue, 300)
+        || !canonicalUrl(pub.publication_url) || canonicalUrl(pub.publication_url) !== canon
+        || /^https:\/\/(?:[^/]+\.)?(?:arxiv\.org|biorxiv\.org|medrxiv\.org)(?:\/|$)/i.test(canon || '')) {
+      errors.push('publication must identify a published paper venue and matching primary publication URL, not a preprint');
+    }
+  }
   var repoCheck = validateRepositoryName(item.repository);
   if (!repoCheck.ok) errors = errors.concat(repoCheck.errors);
 
@@ -416,6 +433,7 @@ function validateBundle(bundle, opts) {
   if (PRODUCERS.indexOf(bundle.producer) === -1) errors.push('producer must be one of ' + PRODUCERS.join('/'));
   if (!isNonEmptyTrimmedString(bundle.model_id, 200)) errors.push('model_id must be a nonempty string');
   if (bundle.kind !== 'digest') errors.push('kind must equal "digest"');
+  if (bundle.newsletter !== undefined && NEWSLETTERS.indexOf(bundle.newsletter) === -1) errors.push('newsletter must be product or academic');
 
   if (!Array.isArray(bundle.items) || bundle.items.length < MIN_ITEMS) {
     errors.push('items must be an array with at least ' + MIN_ITEMS + ' entries');
@@ -427,6 +445,9 @@ function validateBundle(bundle, opts) {
     var seenUrls = {};
     bundle.items.forEach(function (item, idx) {
       var check = validateItem(item, bundle.edition_date);
+      if (bundle.newsletter === 'academic' && (!item || item.source_type !== 'academic' || !item.publication)) {
+        errors.push('items[' + idx + ']: academic newsletter requires only published academic papers with publication evidence');
+      }
       check.errors.forEach(function (e) { errors.push('items[' + idx + ']: ' + e); });
       if (isValidItemId(item && item.item_id)) {
         if (seenIds[item.item_id]) errors.push('items[' + idx + ']: duplicate item_id ' + item.item_id);
@@ -774,25 +795,26 @@ function buildRatingLegendText() {
     + 'Reply syntax: RATE RAD-abc123def456 5 REV=0 good match\n';
 }
 
-function buildDigestSubject(editionDate, isTest, deliveryKey) {
+function buildDigestSubject(editionDate, isTest, deliveryKey, newsletter) {
   var prefix = isTest ? '[TEST] ' : '';
   var suffix = deliveryKey ? ' [' + deliveryKey + ']' : '';
-  return prefix + DIGEST_SUBJECT_PREFIX + ' — ' + editionDate + suffix;
+  return prefix + newsletterName(newsletter) + ' — ' + editionDate + suffix;
 }
 
 function buildDigestHtml(bundle) {
   var parts = [];
   parts.push('<div style="font-family:sans-serif;font-size:14px;color:#111;">');
-  parts.push('<h1 style="font-size:18px;">' + escapeHtml(DIGEST_SUBJECT_PREFIX) + ' — ' + escapeHtml(bundle.edition_date) + '</h1>');
+  parts.push('<h1 style="font-size:18px;">' + escapeHtml(newsletterName(bundle.newsletter)) + ' — ' + escapeHtml(bundle.edition_date) + '</h1>');
   parts.push(buildRatingLegendHtml());
   bundle.items.forEach(function (item) {
     parts.push('<div style="border-top:1px solid #eee;padding:12px 0;">');
-    if (item.user_facing_ai === true) parts.push('<p><strong>AI product your users could interact with</strong></p>');
+    if (item.user_facing_ai === true) parts.push('<p><strong>' + (bundle.newsletter === 'academic' ? 'Paper-backed AI product idea for your users' : 'AI product your users could interact with') + '</strong></p>');
     parts.push('<h2 style="font-size:16px;margin:0 0 4px;">'
       + '<a href="' + escapeHtml(item.source_url) + '">' + escapeHtml(item.title) + '</a></h2>');
     parts.push('<p style="margin:2px 0;color:#555;">' + escapeHtml(item.item_id) + ' · '
       + escapeHtml(item.source_type) + ' · ' + escapeHtml(item.published_at) + ' · '
       + escapeHtml(item.evidence_label) + '</p>');
+    if (item.publication) parts.push('<p><strong>Published in:</strong> ' + escapeHtml(item.publication.venue) + ' · <a href="' + escapeHtml(item.publication.publication_url) + '">Read the published paper</a></p>');
     parts.push('<p><strong>What this means in everyday terms:</strong> ' + escapeHtml(item.summary) + '</p>');
     parts.push('<p><strong>Why this could be useful in your work:</strong> ' + escapeHtml(item.why_it_matters) + '</p>');
     if (item.application_example) parts.push('<p><strong>A practical example (proposed trial):</strong> ' + escapeHtml(item.application_example) + '</p>');
@@ -813,15 +835,16 @@ function buildDigestHtml(bundle) {
 
 function buildDigestText(bundle) {
   var lines = [];
-  lines.push(DIGEST_SUBJECT_PREFIX + ' — ' + bundle.edition_date);
+  lines.push(newsletterName(bundle.newsletter) + ' — ' + bundle.edition_date);
   lines.push('');
   lines.push(buildRatingLegendText());
   bundle.items.forEach(function (item) {
     lines.push('---');
     lines.push(item.title + ' (' + item.item_id + ')');
-    if (item.user_facing_ai === true) lines.push('AI PRODUCT YOUR USERS COULD INTERACT WITH');
+    if (item.user_facing_ai === true) lines.push(bundle.newsletter === 'academic' ? 'PAPER-BACKED AI PRODUCT IDEA FOR YOUR USERS' : 'AI PRODUCT YOUR USERS COULD INTERACT WITH');
     lines.push(item.source_url);
     lines.push(item.source_type + ' · ' + item.published_at + ' · ' + item.evidence_label);
+    if (item.publication) lines.push('Published in: ' + item.publication.venue + ' | ' + item.publication.publication_url);
     lines.push('What this means in everyday terms: ' + item.summary);
     lines.push('Why this could be useful in your work: ' + item.why_it_matters);
     if (item.application_example) lines.push('A practical example (proposed trial): ' + item.application_example);
@@ -847,7 +870,8 @@ function buildOutboxRecord(bundle, recipient, subject, isTest, deliveryKey, nowI
     status: 'claimed',
     is_test: !!isTest,
     created_at: nowIso,
-    updated_at: nowIso
+    updated_at: nowIso,
+    newsletter: bundle.newsletter || 'product'
   };
 }
 
@@ -879,6 +903,7 @@ function reconstructSnapshotItem(row) {
     repository: row.repository,
     user_facing_ai: row.user_facing_ai === true || row.user_facing_ai === 'true',
     application_example: row.application_example || undefined,
+    publication: row.publication_json ? JSON.parse(row.publication_json) : undefined,
     guidance: [row.guidance_where, row.guidance_try, row.guidance_benefit, row.guidance_effort, row.guidance_check],
     topics: row.topics ? String(row.topics).split(',').filter(function (t) { return t.length > 0; }) : [],
     first_delivered_edition_date: row.first_delivered_edition_date,
@@ -1156,7 +1181,8 @@ function recordItems(ss, bundle, nowIso, isPreview) {
       run_id: bundle.run_id,
       added_at: nowIso,
       user_facing_ai: item.user_facing_ai === true,
-      application_example: item.application_example || ''
+      application_example: item.application_example || '',
+      publication_json: item.publication ? JSON.stringify(item.publication) : ''
     };
     if (existing) {
       var values = SHEET_SCHEMAS.Items.map(function(key) {
@@ -1220,10 +1246,10 @@ function getSheetRows(sheet, tabName) {
  * a restart that lost LAST_DELIVERED_EDITION_DATE. Either case must block a
  * second send attempt until a human reconciles it; only failed_permanent
  * (an unambiguous, well-understood failure) does not block a later retry. */
-function hasBlockingDeliveryForEdition(ss, editionDate) {
+function hasBlockingDeliveryForEdition(ss, editionDate, newsletter) {
   var rows = getSheetRows(ss.getSheetByName('Deliveries'), 'Deliveries');
   return rows.some(function (r) {
-    return r.edition_date === editionDate && !r.is_test && BLOCKING_DELIVERY_STATUSES.indexOf(r.status) !== -1;
+    return (r.newsletter || 'product') === (newsletter || 'product') && r.edition_date === editionDate && !r.is_test && BLOCKING_DELIVERY_STATUSES.indexOf(r.status) !== -1;
   });
 }
 
@@ -1351,7 +1377,7 @@ function sendDigestEmail(bundleView, isTest) {
   var ss = SpreadsheetApp.openById(getProp(PROP.SHEET_ID));
   var recipient = getOwnerEmail();
   var deliveryKey = bundleView.edition_date + '-' + Utilities.getUuid().slice(0, 8);
-  var subject = buildDigestSubject(bundleView.edition_date, isTest, deliveryKey);
+  var subject = buildDigestSubject(bundleView.edition_date, isTest, deliveryKey, bundleView.newsletter);
   var nowIso = new Date().toISOString();
 
   // Durable outbox write BEFORE the send attempt, per contract — flushed to
@@ -1365,7 +1391,7 @@ function sendDigestEmail(bundleView, isTest) {
   try {
     sendRadarEmail(recipient, subject, buildDigestText(bundleView), {
       htmlBody: buildDigestHtml(bundleView),
-      name: 'AI Product Radar'
+      name: newsletterName(bundleView.newsletter)
     });
   } catch (e) {
     threw = true;
@@ -1383,7 +1409,8 @@ function sendDigestEmail(bundleView, isTest) {
     status: outcome,
     is_test: !!isTest,
     created_at: nowIso,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    newsletter: bundleView.newsletter || 'product'
   });
 
   return { outcome: outcome, deliveryKey: deliveryKey };
@@ -1392,17 +1419,18 @@ function sendDigestEmail(bundleView, isTest) {
 /** Logged at most once per India calendar day (LAST_MISSING_LOGGED_DATE
  * gates it) so a persistently-missing candidate doesn't spam Runs or imply
  * repeated failure — the absence itself is the fact worth recording once. */
-function logMissingCandidateOnce(ss, editionDate, nowIso) {
-  if (getProp(PROP.LAST_MISSING_LOGGED_DATE) === editionDate) return;
+function logMissingCandidateOnce(ss, editionDate, nowIso, newsletter) {
+  var missingKey = newsletterProperty(PROP.LAST_MISSING_LOGGED_DATE, newsletter);
+  if (getProp(missingKey) === editionDate) return;
   recordRun(ss, {
-    run_id: 'missing-' + editionDate,
+    run_id: 'missing-' + (newsletter === 'academic' ? 'academic-' : '') + editionDate,
     producer: 'system',
     model_id: 'n/a',
     edition_date: editionDate,
     generated_at: nowIso,
     items: []
   }, 'missing_candidate', 'no validator-approved candidate with >= ' + MIN_ITEMS + ' undelivered items for ' + editionDate, nowIso);
-  setProp(PROP.LAST_MISSING_LOGGED_DATE, editionDate);
+  setProp(missingKey, editionDate);
 }
 
 function exportSnapshot(folders, ss) {
@@ -1436,6 +1464,9 @@ function exportSnapshot(folders, ss) {
   var nowIso = new Date().toISOString();
   if (typeof RADAR_PREVIEW !== 'undefined' && getProp('PREVIEW_SENT_RUN') === RADAR_PREVIEW.run_id) {
     digests.push(RADAR_PREVIEW);
+  }
+  if (typeof RADAR_ACADEMIC_PREVIEW !== 'undefined' && getProp('PREVIEW_SENT_RUN_ACADEMIC') === RADAR_ACADEMIC_PREVIEW.run_id) {
+    digests.push(RADAR_ACADEMIC_PREVIEW);
   }
   var snapshot = buildSnapshotJson(items, digests, ratings, getStateRevision(), nowIso);
   writeJsonFile(folders.snapshots, 'snapshot.json', snapshot);
@@ -1481,27 +1512,27 @@ function dispatchRadarWork() {
     var deliveredIds = getDeliveredItemIds(ss.getSheetByName('Items'));
     var digestCandidates = listAcceptedDigestCandidates(folders);
     var attestations = listAcceptedAttestations(folders);
-    var descriptors = buildCandidateDescriptors(digestCandidates, attestations, deliveredIds);
-    var winner = selectDeliverableCandidate(descriptors, todayEditionDate);
-
-    var lastDelivered = getProp(PROP.LAST_DELIVERED_EDITION_DATE);
-    var dueCheck = isDueForDispatch(now, lastDelivered);
-    var blocked = hasBlockingDeliveryForEdition(ss, todayEditionDate);
-    var due = dueCheck.due && !blocked;
-
-    if (due && winner) {
-      var view = Object.assign({}, winner.bundle, { items: winner.freshItems });
-      var sendResult = sendDigestEmail(view, false);
-      if (sendResult.outcome === 'sent') {
-        // Items are marked delivered only now, after a confirmed send —
-        // never at ingestion time.
-        recordItems(ss, view, nowIso);
-        setProp(PROP.LAST_DELIVERED_EDITION_DATE, todayEditionDate);
-        bumpStateRevision();
+    NEWSLETTERS.forEach(function(newsletter) {
+      // Re-read delivered IDs after each channel to avoid cross-mailer repeats.
+      var descriptors = buildCandidateDescriptors(digestCandidates.filter(function(c) {
+        return (c.bundle.newsletter || 'product') === newsletter;
+      }), attestations, getDeliveredItemIds(ss.getSheetByName('Items')));
+      var winner = selectDeliverableCandidate(descriptors, todayEditionDate);
+      var lastKey = newsletterProperty(PROP.LAST_DELIVERED_EDITION_DATE, newsletter);
+      var due = isDueForDispatch(now, getProp(lastKey)).due
+        && !hasBlockingDeliveryForEdition(ss, todayEditionDate, newsletter);
+      if (due && winner) {
+        var view = Object.assign({}, winner.bundle, {items: winner.freshItems});
+        var result = sendDigestEmail(view, false);
+        if (result.outcome === 'sent') {
+          recordItems(ss, view, nowIso);
+          setProp(lastKey, todayEditionDate);
+          bumpStateRevision();
+        }
+      } else if (due && !winner) {
+        logMissingCandidateOnce(ss, todayEditionDate, nowIso, newsletter);
       }
-    } else if (due && !winner) {
-      logMissingCandidateOnce(ss, todayEditionDate, nowIso);
-    }
+    });
 
     exportSnapshot(folders, ss);
   });
@@ -1750,7 +1781,7 @@ function processGmailReplies() {
     getSheetRows(ss.getSheetByName('Deliveries'), 'Deliveries').forEach(function(row) {
       if (row.status === 'sent' || row.status === 'uncertain') deliveredSubjects[row.subject] = true;
     });
-    var threads = readRadarThreads('from:' + ownerEmail + ' newer_than:30d subject:"' + DIGEST_SUBJECT_PREFIX + '"');
+    var threads = readRadarThreads('from:' + ownerEmail + ' newer_than:30d {subject:"AI Product Radar" subject:"AI Research Radar"}');
     var commandCount = 0;
     threads.forEach(function (thread) {
       var messages = thread.getMessages();

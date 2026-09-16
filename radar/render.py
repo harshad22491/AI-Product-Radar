@@ -102,13 +102,24 @@ def render_html(bundle: dict, rating_url: str = "") -> str:
         repository_evidence = (
             f'<p><strong>Repository evidence:</strong> {escape(evidence)}</p>' if evidence else ""
         )
+        publication = item.get("publication")
+        publication_html = (
+            f'<p class="meta"><strong>Publication:</strong> {escape(publication["venue"])} | '
+            f'<a href="{escape(publication["publication_url"], quote=True)}">Open publication</a></p>'
+            if publication else ""
+        )
+        product_marker = (
+            "Proposed paper-backed product" if data.get("newsletter", "product") == "academic"
+            else "User-facing AI product"
+        )
         cards.append(
             '<article class="item-card">'
             f'<div class="item-kicker">{escape(item["item_id"])} | {escape(item["source_type"].title())}'
-            f'{" | User-facing AI product" if item["user_facing_ai"] else ""}</div>'
+            f'{" | " + product_marker if item["user_facing_ai"] else ""}</div>'
             f'<h2>{escape(item["title"])}</h2>'
             f'<p class="meta"><strong>Source date:</strong> {escape(item["published_at"])} | '
             f'<a href="{escape(item["source_url"], quote=True)}">Open source</a></p>'
+            f"{publication_html}"
             f"{extra_dates}"
             f'<p>{escape(item["summary"])}</p>'
             f'<p><strong>Why it matters:</strong> {escape(item["why_it_matters"])}</p>'
@@ -130,8 +141,8 @@ def render_html(bundle: dict, rating_url: str = "") -> str:
         ".eyebrow,.item-kicker{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#b8d9c5}.masthead h1{margin:5px 0 4px;font:700 32px/1.1 Georgia,serif}.masthead p{margin:0;color:#e0e8df}"
         ".rating-panel{background:#fffdf8;border:1px solid #d8cdbb;border-radius:10px;padding:20px;margin:16px 0}.rating-panel h2{margin-top:0;color:#263b35}.legend{border-collapse:collapse;width:100%;margin:14px 0}.legend td,.legend th{text-align:left;padding:7px 8px;border-bottom:1px solid #e7dfd2}.legend th{font-size:12px;text-transform:uppercase;color:#6c665d}.rating-number{font-weight:700;color:#b55c35;width:34px}.tag,.topic{display:inline-block;border-radius:999px;padding:2px 9px;margin:3px 3px 0 0;background:#eee6d8;color:#5d5144;font-size:13px}.rating-button{display:inline-block;background:#c76238;color:#fff;padding:9px 14px;border-radius:7px;text-decoration:none;font-weight:700}.item-card{background:#fff;border:1px solid #e1d9cd;border-radius:10px;padding:22px;margin:16px 0;box-shadow:0 3px 12px #392b1710}.item-card h2{font:700 25px/1.2 Georgia,serif;margin:7px 0}.item-card h3{font-size:16px;color:#263b35;margin-bottom:5px}.item-kicker{color:#b55c35}.meta{font-size:14px;color:#6c665d}.meta a{color:#9c4929}.guidance{padding-left:24px;margin-top:4px}.guidance li{padding:3px 0}.topics{margin-top:14px}.footer{color:#6c665d;font-size:13px;text-align:center;margin-top:24px}"
         '</style></head><body><main class="wrap">'
-        f'<header class="masthead"><div class="eyebrow">AI Product Radar | {escape(data["edition_date"])}</div>'
-        f'<h1>Seven useful signals</h1><p>Prepared by {escape(data["producer"])} | {escape(data["model_id"])}</p></header>'
+        f'<header class="masthead"><div class="eyebrow">{("AI Research Radar" if data.get("newsletter", "product") == "academic" else "AI Product Radar")} | {escape(data["edition_date"])}</div>'
+        f'<h1>{("AI Research Radar" if data.get("newsletter", "product") == "academic" else "Seven useful signals")}</h1><p>Prepared by {escape(data["producer"])} | {escape(data["model_id"])}</p></header>'
         f"{_rating_html(safe_rating_url)}"
         f"{''.join(cards)}"
         f'<p class="footer">Run {escape(data["run_id"])} | Generated {escape(data["generated_at"])}</p>'
@@ -143,7 +154,7 @@ def render_text(bundle: dict) -> str:
     """Render a validated digest as readable plain text."""
     data = validate_bundle(bundle)
     lines = [
-        "AI PRODUCT RADAR",
+        "AI Research Radar" if data.get("newsletter", "product") == "academic" else "AI PRODUCT RADAR",
         f"Edition: {data['edition_date']} | Prepared by {data['producer']} ({data['model_id']})",
         "",
         "HOW TO RATE (always applies)",
@@ -160,13 +171,16 @@ def render_text(bundle: dict) -> str:
                 f"{number}. {item['title']} [{item['item_id']}]",
                 f"Source: {item['source_url']}",
                 f"Source date: {item['published_at']} ({item['source_type']})",
-                "Product marker: User-facing AI product" if item["user_facing_ai"] else "Product marker: Supporting research or tool",
+                ("Product marker: Proposed paper-backed product" if data.get("newsletter", "product") == "academic" else "Product marker: User-facing AI product") if item["user_facing_ai"] else "Product marker: Supporting research or tool",
                 f"Rate this item: RATE {item['item_id']} SCORE REV=0 your reason",
             ]
         )
         source_dates = _source_dates_text(item)
         if source_dates:
             lines.append(f"Source dates: {source_dates}")
+        publication = item.get("publication")
+        if publication:
+            lines.append(f"Publication: {publication['venue']} ({publication['publication_url']})")
         lines.extend(
             [
                 f"Summary: {item['summary']}",

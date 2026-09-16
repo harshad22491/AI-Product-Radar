@@ -1298,6 +1298,88 @@ test('legacy text-formatted false still blocks real duplicate delivery and ratin
   assert.equal(event.score,4);assert.equal(event.base_revision,0);
 });
 
+function academicBundle(s, overrides={}) {
+  const b=digestBundleFixture(s,Object.assign({run_id:'academic-fixture',newsletter:'academic'},overrides));
+  b.items.forEach((item,i)=>{
+    item.source_type='academic';
+    item.source_url='https://aclanthology.org/2025.acl-long.'+(i+1)+'/';
+    item.item_id=s.stableItemId(item.source_url);
+    item.publication={status:'published',venue:'ACL 2025',publication_url:item.source_url};
+  });
+  return b;
+}
+
+test('academic validation rejects mixed sources, unverified publication and preprints',()=>{
+  const b=academicBundle(g);
+  assert.equal(g.validateBundle(b).ok,true);
+  b.items[1].source_type='tool';
+  assert.equal(g.validateBundle(b).ok,false);
+  b.items[1].source_type='academic';
+  delete b.items[1].publication;
+  assert.equal(g.validateBundle(b).ok,false);
+  b.items[1].publication={status:'preprint',venue:'arXiv',publication_url:b.items[1].source_url};
+  assert.equal(g.validateBundle(b).ok,false);
+  b.items[1].source_url='https://arxiv.org/abs/2501.00001';
+  b.items[1].item_id=g.stableItemId(b.items[1].source_url);
+  b.items[1].publication={status:'published',venue:'Claimed venue',publication_url:b.items[1].source_url};
+  assert.equal(g.validateBundle(b).ok,false);
+});
+
+test('two newsletter editions send independently, preserve publication, and do not duplicate on retry',()=>{
+  const s=setupOrchestrationFixture(), product=digestBundleFixture(s), academic=academicBundle(s);
+  [product,academic].forEach(b=>{
+    putInboxFile(s,b.run_id+'.json',b);
+    putInboxFile(s,'validation-'+b.run_id+'.json',attestationFor(s,b,JSON.stringify(b)));
+  });
+  setFakeNow('2026-09-15T11:29:00Z');s.dispatchRadar();
+  assert.equal(s.GmailApp._sent.length,0);
+  setFakeNow('2026-09-15T11:30:00Z');s.dispatchRadar();s.dispatchRadar();
+  assert.equal(s.GmailApp._sent.length,2);
+  assert.ok(s.GmailApp._sent[0].subject.startsWith('AI Product Radar'));
+  assert.ok(s.GmailApp._sent[1].subject.startsWith('AI Research Radar'));
+  assert.ok(s.buildDigestHtml(academic).includes('Paper-backed AI product idea'));
+  assert.ok(s.buildDigestText(academic).includes('Published in: ACL 2025'));
+  const ss=s.SpreadsheetApp.openById(s.PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
+  assert.equal(s.hasBlockingDeliveryForEdition(ss,'2026-09-15','academic'),true);
+  const item=s.getItemsById(ss)[academic.items[0].item_id];
+  assert.equal(item.publication.venue,'ACL 2025');
+});
+
+test('uncertain product delivery does not block an academic edition',()=>{
+  const s=setupOrchestrationFixture(), b=academicBundle(s);
+  const ss=s.SpreadsheetApp.openById(s.PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
+  s.appendRow(ss.getSheetByName('Deliveries'),'Deliveries',{edition_date:'2026-09-15',is_test:false,status:'uncertain'});
+  putInboxFile(s,'academic.json',b);putInboxFile(s,'approval.json',attestationFor(s,b,JSON.stringify(b)));
+  setFakeNow('2026-09-15T12:00:00Z');s.dispatchRadar();s.dispatchRadar();
+  assert.equal(s.GmailApp._sent.length,1);
+  assert.ok(s.GmailApp._sent[0].subject.startsWith('AI Research Radar'));
+});
+
+test('academic preview is separately ratable and does not resend the old product preview',()=>{
+  const s=setupOrchestrationFixture();
+  vm.runInContext(fs.readFileSync('google/Activate.js','utf8'),s);
+  s.RADAR_PREVIEW=digestBundleFixture(s,{run_id:'product-preview'});
+  s.PropertiesService.getScriptProperties().setProperty('PREVIEW_SENT_RUN','product-preview');
+  s.RADAR_ACADEMIC_PREVIEW=academicBundle(s,{run_id:'academic-preview'});
+  setFakeNow('2026-09-15T10:00:00Z');s.dispatchRadar();s.dispatchRadar();
+  assert.equal(s.GmailApp._sent.length,1);
+  const subject=s.GmailApp._sent[0].subject;
+  assert.ok(subject.startsWith('[TEST] AI Research Radar'));
+  const itemId=s.RADAR_ACADEMIC_PREVIEW.items[0].item_id;
+  let query='';
+  s.readRadarThreads=q=>{query=q;return [{getMessages:()=>[{
+    getId:()=> 'academic-reply',getSubject:()=>subject,getFrom:()=> 'harshad422@gmail.com',
+    getHeader:()=>'<original@example>',getPlainBody:()=> 'RATE '+itemId+' 4 REV=0 useful paper',
+    getDate:()=>new Date('2026-09-15T10:05:00Z')
+  }]}]};
+  s.processGmailReplies();s.processGmailReplies();
+  assert.ok(query.includes('subject:"AI Research Radar"'));
+  const ss=s.SpreadsheetApp.openById(s.PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
+  const ratings=s.getSheetRows(ss.getSheetByName('CurrentRatings'),'CurrentRatings');
+  assert.equal(ratings.length,1);assert.equal(ratings[0].score,4);assert.equal(ratings[0].revision,1);
+  assert.equal(s.getDeliveredItemIds(ss.getSheetByName('Items')).size,0);
+});
+
 // --- summary -------------------------------------------------------------------
 
 if (failures.length > 0) {

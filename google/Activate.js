@@ -35,6 +35,7 @@ function radarActivationStatus() {
     owner: getOwnerEmail(),
     reply_ratings_active: triggers.some(function(t) { return t.handler === 'processGmailReplies'; }),
     delivery_dispatcher_active: triggers.some(function(t) { return t.handler === 'dispatchRadar'; }),
+    newsletters: ['AI Product Radar', 'AI Research Radar'],
     delivery_time: '17:00 Asia/Kolkata; next Google polling tick, normally within 5 minutes',
     research_and_validation_status: 'independent-provider-run-verification-required',
     triggers: triggers
@@ -44,19 +45,25 @@ function radarActivationStatus() {
 /** One authorized preview, sent once by the real gateway. Its items are
  * ratable without counting as a regular daily edition. */
 function sendConfiguredPreview(folders, ss, nowIso) {
-  if (typeof RADAR_PREVIEW === 'undefined' || getProp('PREVIEW_SENT_RUN') === RADAR_PREVIEW.run_id) return;
+  var previews = [];
+  if (typeof RADAR_PREVIEW !== 'undefined') previews.push(RADAR_PREVIEW);
+  if (typeof RADAR_ACADEMIC_PREVIEW !== 'undefined') previews.push(RADAR_ACADEMIC_PREVIEW);
+  previews.forEach(function(preview) {
+  var previewKey = newsletterProperty('PREVIEW_SENT_RUN', preview.newsletter);
+  if (getProp(previewKey) === preview.run_id) return;
   var rows = getSheetRows(ss.getSheetByName('Deliveries'), 'Deliveries');
-  var matches = rows.filter(function(row) { return row.run_id === RADAR_PREVIEW.run_id && row.is_test; });
+  var matches = rows.filter(function(row) { return row.run_id === preview.run_id && row.is_test; });
   var sent = matches.some(function(row) { return row.status === 'sent'; });
   if (!sent && matches.some(function(row) { return BLOCKING_DELIVERY_STATUSES.indexOf(row.status) !== -1; })) return;
-  var checked = validateBundle(RADAR_PREVIEW, {nowMs: new Date(nowIso).getTime()});
+  var checked = validateBundle(preview, {nowMs: new Date(nowIso).getTime()});
   if (!checked.ok) throw new Error('Preview validation: ' + checked.errors.join('; '));
-  if (!sent) sent = sendDigestEmail(RADAR_PREVIEW, true).outcome === 'sent';
+  if (!sent) sent = sendDigestEmail(preview, true).outcome === 'sent';
   if (sent) {
-    recordItems(ss, RADAR_PREVIEW, nowIso, true);
-    setProp('PREVIEW_SENT_RUN', RADAR_PREVIEW.run_id);
+    recordItems(ss, preview, nowIso, true);
+    setProp(previewKey, preview.run_id);
     bumpStateRevision();
   }
+  });
 }
 
 function doGet() {

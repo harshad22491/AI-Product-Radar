@@ -332,6 +332,8 @@ def render_item_note(item: dict, existing: str | None, rating) -> str:
         "topics": item.get("topics", []),
         "user_facing_ai": item.get("user_facing_ai", False),
     }
+    if item.get("publication"):
+        fm["publication"] = item["publication"]
     if rating:
         fm["rating"] = rating["score"]
         fm["rating_revision"] = rating.get("revision", 0)
@@ -341,12 +343,16 @@ def render_item_note(item: dict, existing: str | None, rating) -> str:
     lines.append(f"# {item.get('title', item['item_id'])}")
     lines.append("")
     lines.append(f"Source: {item.get('source_url', '')}")
+    publication = item.get("publication")
+    if publication:
+        lines.extend(["", f"Publication: [{publication.get('venue', '')}]({publication.get('publication_url', '')})"])
     lines.append("")
     lines.append(str(item.get("summary", "")))
     lines.append("")
     lines.append(str(item.get("why_it_matters", "")))
     if item.get("user_facing_ai"):
-        lines.extend(["", "**AI product your users could interact with**"])
+        marker = "Proposed paper-backed product" if item.get("publication") else "AI product your users could interact with"
+        lines.extend(["", f"**{marker}**"])
     if item.get("application_example"):
         lines.extend(["", "## A practical example (proposed trial)", "", str(item["application_example"])])
     guidance = item.get("guidance", [])
@@ -399,7 +405,9 @@ def render_digest_note(digest: dict, existing: str | None) -> str:
         "kind": digest.get("kind", "digest"),
         "item_ids": item_ids,
     }
-    title = digest.get("title") or f"Radar Digest {digest.get('edition_date', digest['run_id'])}"
+    if "newsletter" in digest:
+        fm["newsletter"] = digest["newsletter"]
+    title = digest.get("title") or (f"AI Research Radar {digest.get('edition_date', digest['run_id'])}" if digest.get("newsletter") == "academic" else f"Radar Digest {digest.get('edition_date', digest['run_id'])}")
     lines = [render_frontmatter(fm), "", f"# {title}", ""]
     if item_ids:
         lines.extend(["## Items", ""])

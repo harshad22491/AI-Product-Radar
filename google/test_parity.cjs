@@ -22,4 +22,13 @@ assert.equal(context.validateBundle(bundle,{nowMs:Date.now()}).ok,true,
   JSON.stringify(context.validateBundle(bundle,{nowMs:Date.now()}).errors));
 assert.equal(context.canonicalUrl('https://user:password@example.com/x'),null);
 assert.equal(context.canonicalUrl('https://example.com/x y'),null);
+const academic=JSON.parse(fs.readFileSync('examples/academic-digest.json','utf8'));
+assert.equal(context.validateBundle(academic,{nowMs:Date.now()}).ok,true,
+  JSON.stringify(context.validateBundle(academic,{nowMs:Date.now()}).errors));
+const normalized=JSON.parse(cp.execFileSync('python',['-c',
+  'import json,sys; from radar.domain import validate_bundle; print(json.dumps(validate_bundle(json.load(sys.stdin))))'],
+  {input:JSON.stringify(academic),encoding:'utf8'}));
+assert.equal(normalized.newsletter,'academic');
+assert.equal(context.validateBundle(normalized,{nowMs:Date.now()}).ok,true);
+assert.equal(normalized.items[0].publication.publication_url,context.canonicalUrl(academic.items[0].source_url));
 console.log('Cross-runtime URL identity and real digest validation passed.');
