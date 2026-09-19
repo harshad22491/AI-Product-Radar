@@ -1380,6 +1380,54 @@ test('academic preview is separately ratable and does not resend the old product
   assert.equal(s.getDeliveredItemIds(ss.getSheetByName('Items')).size,0);
 });
 
+function runtimeStatus(s) {
+  const files = s.resolveFolderById(s.PROP.FOLDER_ROOT).getFilesByName('runtime-status.json');
+  return JSON.parse(files.next().getBlob().getDataAsString());
+}
+
+test('runtime status reports missing editions instead of a successful daily delivery', () => {
+  const s = setupOrchestrationFixture();
+  setFakeNow('2026-09-15T12:00:00Z');
+  s.dispatchRadar();
+  const status = runtimeStatus(s);
+  assert.equal(status.status, 'blocked');
+  assert.equal(status.edition_date, '2026-09-15');
+  assert.equal(status.newsletters.product, 'missing_candidate');
+  assert.equal(status.newsletters.academic, 'missing_candidate');
+});
+
+test('runtime status distinguishes waiting, delivered, and missing channels', () => {
+  const s = setupOrchestrationFixture();
+  const bundle = digestBundleFixture(s);
+  putInboxFile(s, 'product.json', bundle);
+  putInboxFile(s, 'validation-product.json', attestationFor(s, bundle, JSON.stringify(bundle)));
+  setFakeNow('2026-09-15T10:00:00Z');
+  s.dispatchRadar();
+  assert.equal(runtimeStatus(s).status, 'waiting');
+  assert.equal(runtimeStatus(s).newsletters.product, 'ready');
+  setFakeNow('2026-09-15T12:00:00Z');
+  s.dispatchRadar();
+  s.PropertiesService.getScriptProperties().deleteProperty('LAST_DELIVERED_EDITION_DATE');
+  s.dispatchRadar();
+  assert.equal(runtimeStatus(s).newsletters.product, 'sent');
+  assert.equal(runtimeStatus(s).newsletters.academic, 'missing_candidate');
+  assert.equal(runtimeStatus(s).status, 'blocked');
+  assert.equal(s.GmailApp._sent.length, 1);
+});
+
+test('runtime status preserves uncertain delivery protection', () => {
+  const s = setupOrchestrationFixture();
+  const ss = s.SpreadsheetApp.openById(s.getProp('SHEET_ID'));
+  s.appendRow(ss.getSheetByName('Deliveries'), 'Deliveries', {
+    edition_date: '2026-09-15', status: 'uncertain', is_test: false
+  });
+  setFakeNow('2026-09-15T12:00:00Z');
+  s.dispatchRadar();
+  assert.equal(runtimeStatus(s).newsletters.product, 'uncertain');
+  assert.equal(runtimeStatus(s).status, 'blocked');
+  assert.equal(s.GmailApp._sent.length, 0);
+});
+
 // --- summary -------------------------------------------------------------------
 
 if (failures.length > 0) {

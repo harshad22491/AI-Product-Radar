@@ -13,7 +13,7 @@ There are two separate mailers: **AI Product Radar** covers products, tools and 
 
 ## Cloud components
 
-Fable 5.1 researches through the Claude subscription. A separate Opus routine is configured for independent review because Sol cloud scheduling is unavailable in the current session. Sol remains the preferred OpenAI reviewer when its schedule can be provisioned. No Anthropic API key, GitHub Actions, or paid Obsidian Sync is used.
+The September 19 repair moves Fable subscription research and separate Opus review into GitHub Actions, using direct Google API state exchange. It reuses the working news briefing's external scheduler and adds backup runs. No Anthropic API key or paid Obsidian Sync is used. See [migration and activation evidence](docs/ACTIONS-MIGRATION.md).
 
 Google Apps Script manages delivery, reply ratings, the canonical Google Sheet, and a private Drive exchange. The local PC only synchronizes Markdown notes into Obsidian; it is not the cloud email host.
 

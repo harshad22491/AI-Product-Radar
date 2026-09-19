@@ -1,5 +1,7 @@
 # Implementation contract
 
+**September 19 amendment:** The owner explicitly authorized the working newsletter's GitHub Actions approach for both Radar editions. [ACTIONS-MIGRATION.md](ACTIONS-MIGRATION.md) supersedes the older cloud-routine-only and no-Actions constraints below. Independent source review, subscription authentication, Google delivery/state and duplicate protection remain required.
+
 User approved build and test delivery to harshad422@gmail.com. Do not ask more design questions. No Anthropic API key: Claude subscription CLI/cloud only. Research runs in Claude/ChatGPT cloud; Google Apps Script sends at or after 17:00 Asia/Kolkata. Exact provider execution timing is not guaranteed. No GitHub Actions.
 
 Python 3.11+, standard library runtime, unittest. JavaScript Apps Script V8 for Google orchestration, native HTML email, JSON bundles, Markdown Obsidian notes. All teams use the following shared interfaces. No new dependencies without a concrete need. Do not send email or change external services from subagents.

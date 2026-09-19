@@ -1,0 +1,42 @@
+name: Daily Radar research and review
+on:
+  workflow_dispatch:
+    inputs:
+      check:
+        description: Read-only credentials and state check
+        type: boolean
+        default: false
+  # Backups to the working newsletter's external scheduler dispatches.
+  schedule:
+    - cron: '7 7,9,11 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: daily-radar
+  cancel-in-progress: false
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      GOOGLE_DRIVE_OAUTH: ${{ secrets.GOOGLE_DRIVE_OAUTH }}
+      RADAR_FOLDERS: ${{ vars.RADAR_FOLDERS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Research both editions and obtain independent review
+        run: python -m radar.cloud_runner ${{ inputs.check && '--check' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: radar-run-${{ github.run_id }}
+          path: out/cloud-run-status.json
+          if-no-files-found: ignore
+          retention-days: 14

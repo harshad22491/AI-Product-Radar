@@ -1488,7 +1488,6 @@ function exportSnapshot(folders, ss) {
 function dispatchRadar() {
   try {
     dispatchRadarWork();
-    writeJsonFile(resolveFolderById(PROP.FOLDER_ROOT), 'runtime-status.json', {checked_at:new Date().toISOString(),status:'ok'});
   } catch (e) {
     try { writeJsonFile(resolveFolderById(PROP.FOLDER_ROOT), 'runtime-status.json', {checked_at:new Date().toISOString(),status:'error',message:String(e)}); } catch (ignored) {}
     throw e;
@@ -1509,7 +1508,7 @@ function dispatchRadarWork() {
     rebuildRatingsProjection(ss);
 
     var todayEditionDate = istDateString(now);
-    var deliveredIds = getDeliveredItemIds(ss.getSheetByName('Items'));
+    var channelStatus = {};
     var digestCandidates = listAcceptedDigestCandidates(folders);
     var attestations = listAcceptedAttestations(folders);
     NEWSLETTERS.forEach(function(newsletter) {
@@ -1532,9 +1531,33 @@ function dispatchRadarWork() {
       } else if (due && !winner) {
         logMissingCandidateOnce(ss, todayEditionDate, nowIso, newsletter);
       }
+      // The timer completing is not evidence of delivery. Prefer the durable
+      // ledger so a lost fast-path property does not misreport a sent edition.
+      var deliveryRows = getSheetRows(ss.getSheetByName('Deliveries'), 'Deliveries').filter(function(row) {
+        return (row.newsletter || 'product') === newsletter
+          && row.edition_date === todayEditionDate && !row.is_test;
+      });
+      if (deliveryRows.some(function(row) { return row.status === 'sent'; })) {
+        channelStatus[newsletter] = 'sent';
+      } else if (deliveryRows.some(function(row) { return row.status === 'uncertain'; })) {
+        channelStatus[newsletter] = 'uncertain';
+      } else if (deliveryRows.some(function(row) { return row.status === 'claimed'; })) {
+        channelStatus[newsletter] = 'claimed';
+      } else if (deliveryRows.some(function(row) { return row.status === 'failed_permanent'; })) {
+        channelStatus[newsletter] = 'failed_permanent';
+      } else {
+        channelStatus[newsletter] = winner ? 'ready' : 'missing_candidate';
+      }
     });
 
     exportSnapshot(folders, ss);
+    var complete = NEWSLETTERS.every(function(name) { return channelStatus[name] === 'sent'; });
+    writeJsonFile(folders.root, 'runtime-status.json', {
+      checked_at: nowIso,
+      edition_date: todayEditionDate,
+      status: complete ? 'delivered' : (isAtOrAfter17Ist(now) ? 'blocked' : 'waiting'),
+      newsletters: channelStatus
+    });
   });
 }
 
