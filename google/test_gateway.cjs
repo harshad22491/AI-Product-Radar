@@ -1428,6 +1428,23 @@ test('runtime status preserves uncertain delivery protection', () => {
   assert.equal(s.GmailApp._sent.length, 0);
 });
 
+test('Actions mirror exposes canonical state and exact approved file bytes', () => {
+  const s = setupOrchestrationFixture();
+  const bundle = digestBundleFixture(s);
+  const raw = JSON.stringify(bundle);
+  putInboxFile(s, 'product.json', bundle);
+  putInboxFile(s, 'approval.json', attestationFor(s, bundle, raw));
+  setFakeNow('2026-09-15T10:00:00Z');
+  // File is provisioned by the OAuth application; gateway refreshes it in place.
+  const mirror = driveFolders(s).snapshots.createFile('actions-state.json', '{}');
+  s.dispatchRadar();
+  const state = JSON.parse(mirror.getBlob().getDataAsString());
+  assert.ok(state.snapshot);
+  assert.ok(state.preferences);
+  assert.ok(state.files.some(entry => entry.raw === raw));
+  assert.ok(state.files.some(entry => JSON.parse(entry.raw).kind === 'validation'));
+});
+
 // --- summary -------------------------------------------------------------------
 
 if (failures.length > 0) {

@@ -2,6 +2,7 @@
 import json
 import os
 import time
+from datetime import datetime, timedelta, timezone
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -55,10 +56,10 @@ class DriveExchange:
                     continue
                 raise RuntimeError('Drive request failed (network error)') from None
 
-    def list_files(self, folder):
+    def list_files(self, folder=None, *, query=None):
         files, page = [], None
         while True:
-            params = {'q': f"'{folder}' in parents and trashed = false", 'fields': 'files(id,name),nextPageToken', 'pageSize': 100}
+            params = {'q': query or f"'{folder}' in parents and trashed = false", 'fields': 'files(id,name),nextPageToken', 'pageSize': 100}
             if page:
                 params['pageToken'] = page
             result = json.loads(self.request('files?' + urlencode(params)))
@@ -71,26 +72,32 @@ class DriveExchange:
         return self.request('files/' + file_id + '?alt=media')
 
     def state(self):
-        snapshots = {f['name']: f for f in self.list_files(self.folders['snapshots'])}
-        snapshot = json.loads(self.read(snapshots['snapshot.json']['id']))
-        preferences = json.loads(self.read(snapshots['preferences.json']['id']))
-        records = []
-        for folder in ('accepted', 'inbox'):
-            for entry in self.list_files(self.folders[folder]):
-                if entry['name'].endswith('.json'):
-                    records.append((entry['name'], self.read(entry['id'])))
-        return snapshot, preferences, records
+        state = json.loads(self.read(self.folders['state']))
+        checked = datetime.fromisoformat(state['checked_at'].replace('Z', '+00:00'))
+        now = datetime.now(timezone.utc)
+        if checked.tzinfo is None or not timedelta(minutes=-5) <= now - checked <= timedelta(minutes=20):
+            raise RuntimeError('Google state mirror is stale; check the delivery dispatcher')
+        records = {entry['name']: entry['raw'].encode('utf-8') for entry in state['files']}
+        day = now.astimezone(timezone(timedelta(hours=5, minutes=30))).date().isoformat()
+        # Include our app-owned originals even after the gateway trashes them.
+        # This closes the gap before its next mirror export and survives retries.
+        for entry in self.list_files(query=f"appProperties has {{ key='radar_edition' and value='{day}' }}"):
+            records[entry['name']] = self.read(entry['id'])
+        return state['snapshot'], state['preferences'], list(records.items())
 
     def upload(self, name, raw):
         # Recover a response-lost upload by checking immutable contents.
-        for folder in ('inbox', 'accepted'):
-            for entry in self.list_files(self.folders[folder]):
-                if entry['name'] == name:
-                    if self.read(entry['id']) != raw:
-                        raise ValueError('Immutable Drive file conflicts: ' + name)
-                    return entry['id']
+        escaped = name.replace('\\', '\\\\').replace("'", "\\'")
+        query = f"name = '{escaped}' and appProperties has {{ key='radar_exchange' and value='v1' }}"
+        for entry in self.list_files(query=query):
+            if self.read(entry['id']) != raw:
+                raise ValueError('Immutable Drive file conflicts: ' + name)
+            return entry['id']
         boundary = 'radar_' + uuid4().hex
-        metadata = json.dumps({'name': name, 'parents': [self.folders['inbox']], 'mimeType': 'application/json'}).encode()
+        value = json.loads(raw)
+        day = value.get('edition_date') or datetime.now(timezone(timedelta(hours=5, minutes=30))).date().isoformat()
+        metadata = json.dumps({'name': name, 'parents': [self.folders['inbox']], 'mimeType': 'application/json',
+                               'appProperties': {'radar_edition': day, 'radar_exchange': 'v1'}}).encode()
         body = (f'--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'.encode() + metadata
                 + f'\r\n--{boundary}\r\nContent-Type: application/json\r\n\r\n'.encode() + raw
                 + f'\r\n--{boundary}--\r\n'.encode())

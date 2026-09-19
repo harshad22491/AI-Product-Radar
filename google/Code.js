@@ -1451,14 +1451,17 @@ function exportSnapshot(folders, ss) {
   // sync can render/inspect a past edition without a second round trip.
   var digestFiles = folders.accepted.getFiles();
   var digests = [];
+  var exchangeFiles = [];
   while (digestFiles.hasNext()) {
     var f = digestFiles.next();
-    if (f.getName().indexOf('validation-') === 0) continue;
     var raw;
     try { raw = readRawFile(f); } catch (e) { continue; }
     var parsed;
     try { parsed = JSON.parse(raw); } catch (e) { continue; }
     if (parsed && parsed.kind === 'digest') digests.push(parsed);
+    if (parsed && (parsed.kind === 'digest' || parsed.kind === 'validation')) {
+      exchangeFiles.push({name: f.getName(), raw: raw});
+    }
   }
 
   var nowIso = new Date().toISOString();
@@ -1476,6 +1479,21 @@ function exportSnapshot(folders, ss) {
   prefs.ratings = ratings;
   prefs.delivered_item_ids = items.filter(function(item){return !!item.first_delivered_edition_date;}).map(function(item){return item.item_id;});
   writeJsonFile(folders.snapshots, 'preferences.json', prefs);
+  // Provisioned by the Actions OAuth app so drive.file permits it to read.
+  // Update in place; never create this under the gateway's different app.
+  var mirrors = folders.snapshots.getFilesByName('actions-state.json');
+  if (mirrors.hasNext()) {
+    var today = istDateString(new Date(nowIso));
+    var currentRuns = {};
+    digests.forEach(function(bundle) { if (bundle.edition_date === today) currentRuns[bundle.run_id] = true; });
+    mirrors.next().setContent(JSON.stringify({
+      checked_at: nowIso, snapshot: snapshot, preferences: prefs,
+      files: exchangeFiles.filter(function(entry) {
+        var value = JSON.parse(entry.raw);
+        return !!currentRuns[value.kind === 'digest' ? value.run_id : value.candidate_run_id];
+      })
+    }));
+  }
 }
 
 /**

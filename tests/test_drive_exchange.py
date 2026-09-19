@@ -1,5 +1,6 @@
 import json
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 from radar.drive_exchange import DriveExchange
@@ -24,11 +25,30 @@ class ExchangeTests(unittest.TestCase):
         with patch.object(self.drive, 'list_files', return_value=[{'name': 'edition.json', 'id': 'existing'}]), \
              patch.object(self.drive, 'read', return_value=b'changed'):
             with self.assertRaisesRegex(ValueError, 'conflicts'):
-                self.drive.upload('edition.json', b'original')
+                self.drive.upload('edition.json', b'{"edition_date":"2026-09-19"}')
 
     def test_upload_readback_must_match_original_bytes(self):
         with patch.object(self.drive, 'list_files', return_value=[]), \
              patch.object(self.drive, 'request', return_value=b'{"id":"created"}'), \
              patch.object(self.drive, 'read', return_value=b'changed'):
             with self.assertRaisesRegex(RuntimeError, 'readback differs'):
-                self.drive.upload('edition.json', b'original')
+                self.drive.upload('edition.json', b'{"edition_date":"2026-09-19"}')
+
+    def test_state_uses_app_owned_mirror_and_preserves_new_upload_bytes(self):
+        self.drive.folders['state'] = 'mirror'
+        state = {'checked_at': datetime.now(timezone.utc).isoformat(),
+                 'snapshot': {'items': []}, 'preferences': {'ratings': {}},
+                 'files': [{'name': 'approved.json', 'raw': '{ "original": true }'}]}
+        bodies = {'mirror': json.dumps(state).encode(), 'new': b'{ "new": true }'}
+        with patch.object(self.drive, 'read', side_effect=lambda fid: bodies[fid]), \
+             patch.object(self.drive, 'list_files', return_value=[{'id': 'new', 'name': 'new.json'}]):
+            snapshot, prefs, files = self.drive.state()
+        self.assertEqual(snapshot, {'items': []})
+        self.assertEqual(prefs, {'ratings': {}})
+        self.assertEqual(dict(files), {'approved.json': b'{ "original": true }', 'new.json': b'{ "new": true }'})
+
+    def test_stale_state_stops_research_instead_of_using_old_exclusions(self):
+        self.drive.folders['state'] = 'mirror'
+        with patch.object(self.drive, 'read', return_value=b'{"checked_at":"2020-01-01T00:00:00Z"}'):
+            with self.assertRaisesRegex(RuntimeError, 'mirror is stale'):
+                self.drive.state()
