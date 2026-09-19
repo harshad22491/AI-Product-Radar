@@ -54,6 +54,8 @@ folder IDs plus the app-owned `state` file ID. The newsletter's
 `RADAR_DISPATCH_TOKEN` authorizes workflow dispatch.
 No secrets belong in source, logs, artifacts or prompts. Subscription auth remains
 in use; no paid model API fallback is configured.
+When rotating the Claude subscription token, update both repositories' secrets.
+If the GitHub dispatch credential is revoked, replace `RADAR_DISPATCH_TOKEN`.
 
 Run `gh workflow run daily.yml --repo harshad22491/AI-Product-Radar -f check=true`
 for a read-only hosted credential/state check. Omit `check` for a normal run.
@@ -73,11 +75,43 @@ duplicate protection are enforced at the delivery boundary.
 
 ## Verification
 
-Local: 78 Python tests, 91 gateway scenarios, Gmail transport, owner activation
+Local: 83 Python tests, 91 gateway scenarios, Gmail transport, owner activation
 and cross-runtime parity suites pass. Regression tests cover false-success
 status, exact approval hashes, repeated backup runs, rejection, previous delivery
-and reviewer model identity. Live activation evidence is recorded below after
-the hosted workflow runs.
+and reviewer model identity. Live activation evidence follows.
+
+The private hosted credential/state check passed on September 19:
+[run 35426925469](https://github.com/harshad22491/AI-Product-Radar/actions/runs/35426925469).
+Google deployment version 6 was verified by source readback and the unattended
+06:32:40 UTC dispatcher tick exported the new waiting/missing-candidate status.
+All three old Claude cloud routines were read back as `enabled: false`.
+The working newsletter's independent dispatch job is saved in
+[commit 96f8921](https://github.com/harshad22491/Daily-News-Brief/commit/96f89212ad838129e846d598acbf989432f51d58).
+The one-time subscription-token copy succeeded and its temporary workflow was
+removed. The first full diagnostic run
+[35427022803](https://github.com/harshad22491/AI-Product-Radar/actions/runs/35427022803)
+exposed JSON-response formatting and an independently rejected product claim.
+It was stopped to inspect the logs. The parser now tolerates prose around one
+JSON object, and retries receive the prior rejection reasons for correction.
+The corrected run is
+[35428086029](https://github.com/harshad22491/AI-Product-Radar/actions/runs/35428086029).
+Its seven-item product edition was independently approved by Opus and accepted
+by Google at 07:07 UTC. Readback confirmed Fable producer identity and the exact
+candidate/approval SHA-256 match; the scheduled dispatcher reports product ready.
+The same run completed successfully at 07:35 UTC. Its academic edition
+(`academic-fable-2026-09-19-82270887019a`) also contains seven items, produced by
+Fable and approved independently by Opus with a matching immutable SHA-256.
+Academic review rejected unsupported claims in two attempts; the third passed,
+demonstrating that rejection feedback and bounded retries work in production.
+The queued backup
+[35428751866](https://github.com/harshad22491/AI-Product-Radar/actions/runs/35428751866)
+then succeeded in 17 seconds, reporting both editions `ready` with the same run
+IDs and no new research or review calls. Authenticated exchange readback verified
+both seven-item bundles and exact approval hashes. This verifies hosted research,
+review, exchange and safe repeat execution. Today's actual email send is still
+scheduled for 17:00 India time and was not forced early for this test. The
+newsletter's next external scheduled dispatch will occur after this migration;
+the manual hosted runs do not establish that a future scheduler has fired.
 
 References: [GitHub workflow triggers](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)
 and [Google Drive multipart uploads](https://developers.google.com/workspace/drive/api/guides/manage-uploads).

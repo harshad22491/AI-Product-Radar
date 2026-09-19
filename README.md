@@ -19,9 +19,9 @@ Google Apps Script manages delivery, reply ratings, the canonical Google Sheet, 
 
 ## Operational status
 
-Google's owner authorization and delivery/reply triggers were verified on 2026-09-16. Research routines remain paused until Claude's Drive connector passes a real read/write test: the first run and the retry after reconnection both returned insufficient scope. An installed delivery timer does not by itself prove that new editions will be produced. See [verification](docs/VERIFICATION.md) and [cloud setup](docs/CLOUD-SETUP.md) for evidence and remaining work.
+As of September 19, the GitHub Actions replacement is deployed and the external dispatch job is installed. A full hosted run produced independently approved seven-item bundles for both editions; a second run safely skipped both without new research. Google deployment version 6 exports an Actions-readable state mirror and per-edition delivery status. Today's email delivery remains scheduled for 17:00 India time; research completion is not confirmation of receipt. The old Claude cloud routines remain paused. See [current migration evidence](docs/ACTIONS-MIGRATION.md); the older verification/cloud-setup documents describe the superseded Drive-connector failure.
 
-The academic extension is deployed in the same authorized Google service. Its seven-paper test was delivered to SENT and INBOX and synchronized into Obsidian on 2026-09-16. Both mailers have independent daily delivery tracking and shared reply ratings. Automatic research remains blocked by the existing Claude Drive permissions issue.
+The academic extension uses the same authorized Google service. Its seven-paper test was delivered to SENT and INBOX and synchronized into Obsidian on 2026-09-16. Both mailers retain independent daily delivery tracking and shared reply ratings. The Actions replacement handles both editions without using Claude's Drive connector.
 
 The original preview was delivered through the Gmail connector. The rewritten preview was sent by the real Google gateway on 2026-09-16; the delivery ledger records sent and Gmail confirms SENT and INBOX. Its seven items are registered for ratings.
 
