@@ -42,7 +42,7 @@ def approved(bundle, raw, records):
     )
 
 
-def run_channel(channel, drive, model, *, now=None):
+def run_channel(channel, drive, model, *, now=None, correction=''):
     now = now or datetime.now(timezone.utc)
     day = now.astimezone(IST).date().isoformat()
     snapshot, preferences, files = drive.state()
@@ -81,6 +81,8 @@ def run_channel(channel, drive, model, *, now=None):
     contract = (ROOT / 'prompts/actions-research.md').read_text(encoding='utf-8')
     context = {'edition_date': day, 'newsletter': channel, 'preferences': preferences,
                'previous_items': snapshot['items']}
+    if correction:
+        context['previous_attempt_failure'] = correction
     # Also avoid papers queued by the other channel in this same run.
     queued = [i for b, raw in candidates if b.get('edition_date') == day
               and b.get('newsletter', 'product') != channel and approved(b, raw, records)
@@ -121,8 +123,31 @@ def run_channel(channel, drive, model, *, now=None):
             'candidate_file_id': candidate_id, 'approval_file_id': approval_id}
 
 
+def parse_model_json(text):
+    """Accept prose/code fences around one object; reject ambiguous answers."""
+    decoder = json.JSONDecoder()
+    objects = []
+    cursor = 0
+    while cursor < len(text):
+        start = text.find('{', cursor)
+        if start < 0:
+            break
+        try:
+            value, end = decoder.raw_decode(text[start:])
+        except ValueError:
+            cursor = start + 1
+            continue
+        if isinstance(value, dict):
+            objects.append(value)
+        cursor = start + end
+    if len(objects) != 1:
+        raise ValueError('Model response must contain exactly one JSON object')
+    return objects[0]
+
+
 def call_model(role, prompt):
     model = 'claude-fable-5-1' if role == 'research' else 'claude-opus-5'
+    print(f'Starting {role} with {model}', flush=True)
     env = dict(os.environ)
     # The research process gets subscription auth, never Drive or GitHub credentials.
     for key in list(env):
@@ -147,10 +172,11 @@ def call_model(role, prompt):
     usage = envelope.get('modelUsage', {})
     if model not in usage:
         raise ValueError(f'{role} did not report expected model {model}')
-    text = envelope.get('result', '').strip()
-    if text.startswith('```'):
-        text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
-    return json.loads(text), model
+    value = envelope.get('structured_output')
+    if not isinstance(value, dict):
+        value = parse_model_json(envelope.get('result', ''))
+    print(f'Completed {role} with {model}', flush=True)
+    return value, model
 
 
 def main():
@@ -165,13 +191,16 @@ def main():
         return 0
     outcomes = []
     for channel in ('product', 'academic'):
+        correction = ''
         for attempt in range(3):
             try:
-                result = run_channel(channel, drive, call_model)
+                print(f'{channel} attempt {attempt + 1}: starting', flush=True)
+                result = run_channel(channel, drive, call_model, correction=correction)
                 outcomes.append(result)
                 print(json.dumps(result), flush=True)
                 break
             except Exception as error:
+                correction = str(error)[:12000]
                 print(f'{channel} attempt {attempt + 1}: {type(error).__name__}: {error}', flush=True)
                 if attempt == 2:
                     outcomes.append({'newsletter': channel, 'status': 'failed'})

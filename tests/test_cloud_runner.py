@@ -4,7 +4,7 @@ import json
 import unittest
 from datetime import datetime, timezone
 
-from radar.cloud_runner import run_channel
+from radar.cloud_runner import run_channel, parse_model_json
 from test_domain import make_bundle
 
 
@@ -28,6 +28,24 @@ class CloudRunnerTests(unittest.TestCase):
         if role == 'research':
             return {'items': copy.deepcopy(make_bundle()['items'])}, 'claude-fable-5-1'
         return {'verdict': 'approved', 'reasons': []}, 'claude-opus-5'
+
+    def test_model_json_tolerates_preamble_and_markdown_without_changing_payload(self):
+        self.assertEqual(parse_model_json('Here is the verified result:\n```json\n{"items": []}\n```'), {'items': []})
+        self.assertEqual(parse_model_json('{"verdict":"approved","reasons":[]}\nReview complete.'),
+                         {'verdict': 'approved', 'reasons': []})
+
+    def test_ambiguous_multiple_model_objects_are_rejected(self):
+        with self.assertRaises(ValueError):
+            parse_model_json('{"verdict":"rejected"}\n{"verdict":"approved"}')
+
+    def test_research_receives_previous_review_failure_for_correction(self):
+        def corrected(role, prompt):
+            if role == 'research':
+                self.assertIn('Unsupported cell-editing claim', prompt)
+            return self.model(role, prompt)
+        result = run_channel('product', MemoryDrive(), corrected, now=self.now,
+                             correction='Unsupported cell-editing claim')
+        self.assertEqual(result['status'], 'approved')
 
     def test_approved_bytes_are_uploaded_once_and_backup_skips_them(self):
         drive = MemoryDrive()
