@@ -82,6 +82,17 @@ class CloudRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'reviewer model'):
             run_channel('product', MemoryDrive(), wrong_model, now=self.now)
 
+    def test_gateway_rejected_shape_is_caught_before_upload(self):
+        drive = MemoryDrive()
+        def too_long(role, prompt):
+            value, model = self.model(role, prompt)
+            if role == 'research':
+                value['items'][0]['title'] = 'x' * 301
+            return value, model
+        with self.assertRaisesRegex(ValueError, 'gateway'):
+            run_channel('product', drive, too_long, now=self.now)
+        self.assertEqual(drive.files, [])
+
     def test_product_approval_does_not_skip_academic_research(self):
         drive = MemoryDrive()
         run_channel('product', drive, self.model, now=self.now)

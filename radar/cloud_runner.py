@@ -21,6 +21,13 @@ def encode(value):
     return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
 
 
+def validate_gateway(value):
+    result = subprocess.run(['node', str(ROOT / 'scripts/validate-cloud-bundle.cjs')],
+                            input=encode(value), capture_output=True, timeout=30, check=False)
+    if result.returncode:
+        raise ValueError('Google gateway validation: ' + result.stdout.decode('utf-8')[:2000])
+
+
 def approved(bundle, raw, records):
     digest = hashlib.sha256(raw).hexdigest()
     return any(
@@ -64,6 +71,7 @@ def run_channel(channel, drive, model, *, now=None):
             continue
         try:
             validate_bundle(bundle)
+            validate_gateway(bundle)
         except ValueError:
             continue
         if not any(i['item_id'] in delivered for i in bundle['items']) and approved(bundle, raw, records):
@@ -88,6 +96,7 @@ def run_channel(channel, drive, model, *, now=None):
     for item in bundle['items']:
         item['item_id'] = stable_item_id(item['source_url'])
     bundle = validate_bundle(bundle)
+    validate_gateway(bundle)
     excluded = delivered | {i['item_id'] for i in queued}
     if any(i['item_id'] in excluded for i in bundle['items']):
         raise ValueError('Candidate contains an already delivered or queued item')
@@ -105,6 +114,7 @@ def run_channel(channel, drive, model, *, now=None):
                    'candidate_sha256': hashlib.sha256(raw).hexdigest(),
                    'validator': 'opus', 'model_id': reviewer_model, 'verdict': 'approved',
                    'checked_at': datetime.now(timezone.utc).isoformat()}
+    validate_gateway(attestation)
     candidate_id = drive.upload(bundle['run_id'] + '.json', raw)
     approval_id = drive.upload(attestation['run_id'] + '.json', encode(attestation))
     return {'newsletter': channel, 'status': 'approved', 'run_id': bundle['run_id'],

@@ -24,6 +24,16 @@ The runner reads canonical Google state using direct OAuth, launches separate
 Fable research and Opus source-review processes with public web tools only,
 validates the bundle, calculates its immutable SHA-256 and uploads the approved
 pair with byte-for-byte readback. Models do not receive Drive/GitHub secrets.
+The existing deployment credential has `drive.file`, not unrestricted content
+access: it can list gateway files but cannot download their contents. Google
+therefore refreshes an Actions-created `actions-state.json` in the private
+snapshot folder. The owner explicitly approved this exchange of recommendation
+history, ratings/preferences, sanitized portfolio information and research
+bundles. No source files from other projects enter the exchange. The runner
+requires a fresh mirror and also reads its own pending current-day uploads.
+Trashed originals are excluded because Google may have rejected them; accepted
+bytes come from the authoritative mirror. Before upload, the host runs the exact
+JavaScript gateway validator as well as Python validation to prevent rule drift.
 Three attempts per edition handle failed generation/review. One failed edition
 does not prevent processing the other. Workflow concurrency serializes backups;
 current-day approved pairs or delivered editions are skipped.
@@ -40,7 +50,8 @@ content or a false delivery success.
 Radar secrets: `CLAUDE_CODE_OAUTH_TOKEN` (same subscription as the working news
 briefing), `GOOGLE_DRIVE_OAUTH` (client ID/secret and refresh token from existing
 authorized deployment). `RADAR_FOLDERS` contains only inbox, accepted and snapshot
-folder IDs. The newsletter's `RADAR_DISPATCH_TOKEN` authorizes workflow dispatch.
+folder IDs plus the app-owned `state` file ID. The newsletter's
+`RADAR_DISPATCH_TOKEN` authorizes workflow dispatch.
 No secrets belong in source, logs, artifacts or prompts. Subscription auth remains
 in use; no paid model API fallback is configured.
 
@@ -62,7 +73,7 @@ duplicate protection are enforced at the delivery boundary.
 
 ## Verification
 
-Local: 70 Python tests, 90 gateway scenarios, Gmail transport, owner activation
+Local: 78 Python tests, 91 gateway scenarios, Gmail transport, owner activation
 and cross-runtime parity suites pass. Regression tests cover false-success
 status, exact approval hashes, repeated backup runs, rejection, previous delivery
 and reviewer model identity. Live activation evidence is recorded below after

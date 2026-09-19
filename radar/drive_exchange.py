@@ -59,7 +59,7 @@ class DriveExchange:
     def list_files(self, folder=None, *, query=None):
         files, page = [], None
         while True:
-            params = {'q': query or f"'{folder}' in parents and trashed = false", 'fields': 'files(id,name),nextPageToken', 'pageSize': 100}
+            params = {'q': query or f"'{folder}' in parents and trashed = false", 'fields': 'files(id,name,trashed),nextPageToken', 'pageSize': 100}
             if page:
                 params['pageToken'] = page
             result = json.loads(self.request('files?' + urlencode(params)))
@@ -79,10 +79,11 @@ class DriveExchange:
             raise RuntimeError('Google state mirror is stale; check the delivery dispatcher')
         records = {entry['name']: entry['raw'].encode('utf-8') for entry in state['files']}
         day = now.astimezone(timezone(timedelta(hours=5, minutes=30))).date().isoformat()
-        # Include our app-owned originals even after the gateway trashes them.
-        # This closes the gap before its next mirror export and survives retries.
-        for entry in self.list_files(query=f"appProperties has {{ key='radar_edition' and value='{day}' }}"):
-            records[entry['name']] = self.read(entry['id'])
+        # Only pending originals: a trashed upload might have been rejected.
+        # Accepted bytes are supplied by Google's authoritative mirror instead.
+        for entry in self.list_files(query=f"trashed = false and appProperties has {{ key='radar_edition' and value='{day}' }}"):
+            if not entry.get('trashed'):
+                records[entry['name']] = self.read(entry['id'])
         return state['snapshot'], state['preferences'], list(records.items())
 
     def upload(self, name, raw):

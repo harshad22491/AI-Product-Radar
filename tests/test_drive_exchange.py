@@ -52,3 +52,13 @@ class ExchangeTests(unittest.TestCase):
         with patch.object(self.drive, 'read', return_value=b'{"checked_at":"2020-01-01T00:00:00Z"}'):
             with self.assertRaisesRegex(RuntimeError, 'mirror is stale'):
                 self.drive.state()
+
+    def test_gateway_disposed_original_cannot_resurrect_rejected_candidate(self):
+        self.drive.folders['state'] = 'mirror'
+        state = {'checked_at': datetime.now(timezone.utc).isoformat(),
+                 'snapshot': {'items': []}, 'preferences': {}, 'files': []}
+        bodies = {'mirror': json.dumps(state).encode(), 'rejected': b'{"kind":"digest"}'}
+        with patch.object(self.drive, 'read', side_effect=lambda fid: bodies[fid]), \
+             patch.object(self.drive, 'list_files', return_value=[{'id': 'rejected', 'name': 'rejected.json', 'trashed': True}]):
+            _, _, files = self.drive.state()
+        self.assertEqual(files, [])
