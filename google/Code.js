@@ -54,7 +54,7 @@ var SOURCE_TYPES = ['academic', 'product', 'tool', 'technique'];
 var GUIDANCE_KEYS = ['Where', 'Try', 'Benefit', 'Effort', 'Check'];
 var GUIDANCE_LABELS = ['Where this fits in your work', 'What a small first trial would involve', 'How this could help', 'Time and effort to allow', 'How to tell whether it worked'];
 var RATING_ORIGINS = ['email', 'form', 'chat', 'obsidian'];
-var VALIDATOR_MODELS = {sol: 'gpt-5.6-sol', opus: 'claude-opus-5'};
+var VALIDATOR_MODELS = {sol: 'gpt-5.6-sol', opus: 'claude-opus-5', astra: 'gpt-6-astra'};
 var VERDICTS = ['approved', 'rejected'];
 var BLOCKING_DELIVERY_STATUSES = ['claimed', 'sent', 'uncertain'];
 
@@ -484,7 +484,7 @@ function validateAttestation(att, opts) {
   if (typeof att.candidate_sha256 !== 'string' || !CANDIDATE_SHA256_RE.test(att.candidate_sha256)) {
     errors.push('candidate_sha256 must be a 64-character lowercase hex sha256');
   }
-  if (!Object.prototype.hasOwnProperty.call(VALIDATOR_MODELS, att.validator)) errors.push('validator must equal sol or opus');
+  if (!Object.prototype.hasOwnProperty.call(VALIDATOR_MODELS, att.validator)) errors.push('validator must be one of ' + Object.keys(VALIDATOR_MODELS).join('/'));
   else if (att.model_id !== VALIDATOR_MODELS[att.validator]) errors.push('model_id must equal "' + VALIDATOR_MODELS[att.validator] + '"');
   if (VERDICTS.indexOf(att.verdict) === -1) errors.push('verdict must be one of ' + VERDICTS.join('/'));
   var checked = parseIsoTimestamp(att.checked_at);

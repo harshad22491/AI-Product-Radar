@@ -19,9 +19,11 @@ The portfolio centres on turning repeated business operations into dependable so
 | TCPL-Data-Entry | Spreadsheet schema detection, validation, faster operator forms |
 | Burgundy-Tally-Automation | Invoice extraction, draft vouchers, approval and duplicate detection |
 | Branding-Report-Automation | Table processing, explainable matching, monthly report quality |
-| GHADC | Browser tests, workflow states, accessible product interfaces |
+| GHADC (low priority) | Browser tests, workflow states, accessible product interfaces |
 | Daily-News-Brief | Source quality, deduplication, useful recommendations and feedback |
-| forty-degrees | Personalization, rating interactions, small Streamlit products |
+| forty-degrees (low priority) | Personalization, rating interactions, small Streamlit products |
+
+GHADC and forty-degrees are low priority: at most one item per edition between them. Each run also receives a fresh list of all owned repositories, which takes precedence over this table.
 
 These are sanitized prior-review findings, not a claim that a fresh cloud review has run. Each suggested application is a proposal to test with synthetic or approved data. A successful incremental review must record its date and evidence before changing this profile.
 

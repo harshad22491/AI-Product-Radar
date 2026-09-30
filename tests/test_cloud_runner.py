@@ -4,7 +4,13 @@ import json
 import unittest
 from datetime import datetime, timezone
 
-from radar.cloud_runner import run_channel, parse_model_json
+import os
+import tempfile
+from pathlib import Path
+from unittest import mock
+
+from radar import cloud_runner, github_inventory
+from radar.cloud_runner import approved, run_channel, parse_model_json
 from test_domain import make_bundle
 
 
@@ -26,8 +32,8 @@ class CloudRunnerTests(unittest.TestCase):
 
     def model(self, role, prompt):
         if role == 'research':
-            return {'items': copy.deepcopy(make_bundle()['items'])}, 'claude-fable-5-1'
-        return {'verdict': 'approved', 'reasons': []}, 'claude-opus-5'
+            return {'items': copy.deepcopy(make_bundle()['items'])}, 'claude-opus-5-5'
+        return {'verdict': 'approved', 'reasons': []}, 'gpt-6-astra'
 
     def test_model_json_tolerates_preamble_and_markdown_without_changing_payload(self):
         self.assertEqual(parse_model_json('Here is the verified result:\n```json\n{"items": []}\n```'), {'items': []})
@@ -61,7 +67,7 @@ class CloudRunnerTests(unittest.TestCase):
         drive = MemoryDrive()
         def rejected(role, prompt):
             if role == 'review':
-                return {'verdict': 'rejected', 'reasons': ['Unverified date']}, 'claude-opus-5'
+                return {'verdict': 'rejected', 'reasons': ['Unverified date']}, 'gpt-6-astra'
             return self.model(role, prompt)
         with self.assertRaisesRegex(RuntimeError, 'Unverified date'):
             run_channel('product', drive, rejected, now=self.now)
@@ -96,7 +102,7 @@ class CloudRunnerTests(unittest.TestCase):
     def test_wrong_reviewer_model_cannot_create_approval(self):
         def wrong_model(role, prompt):
             value, model = self.model(role, prompt)
-            return value, 'claude-fable-5-1'
+            return value, 'claude-opus-5-5'
         with self.assertRaisesRegex(ValueError, 'reviewer model'):
             run_channel('product', MemoryDrive(), wrong_model, now=self.now)
 
@@ -126,3 +132,106 @@ class CloudRunnerTests(unittest.TestCase):
         self.assertEqual(run_channel('academic', drive, academic, now=self.now)['status'], 'approved')
         self.assertEqual(json.loads(drive.files[2][1])['newsletter'], 'academic')
         self.assertEqual(len(drive.files), 4)
+
+    def test_attestation_names_astra_and_bundle_names_opus(self):
+        drive = MemoryDrive()
+        run_channel('product', drive, self.model, now=self.now)
+        bundle, attestation = json.loads(drive.files[0][1]), json.loads(drive.files[1][1])
+        self.assertEqual((bundle['producer'], bundle['model_id']), ('opus', 'claude-opus-5-5'))
+        self.assertTrue(bundle['run_id'].startswith('product-opus-'))
+        self.assertEqual((attestation['validator'], attestation['model_id']), ('astra', 'gpt-6-astra'))
+
+    def test_self_approval_by_same_validator_family_is_ignored(self):
+        bundle = dict(make_bundle(), producer='opus')
+        raw = json.dumps(bundle).encode()
+        attestation = {'kind': 'validation', 'candidate_run_id': bundle['run_id'],
+                       'candidate_sha256': hashlib.sha256(raw).hexdigest(), 'verdict': 'approved',
+                       'validator': 'opus', 'model_id': 'claude-opus-5'}
+        self.assertFalse(approved(bundle, raw, [attestation]))
+        self.assertTrue(approved(bundle, raw, [dict(attestation, validator='astra', model_id='gpt-6-astra')]))
+        self.assertFalse(approved(bundle, raw, [dict(attestation, validator='astra', model_id='gpt-5.5')]))
+
+    def test_more_than_one_low_priority_repository_is_rejected_before_review(self):
+        drive = MemoryDrive()
+        def heavy(role, prompt):
+            value, model = self.model(role, prompt)
+            if role == 'review':
+                self.fail('review should not run')
+            value['items'][0]['repository'] = 'GHADC'
+            value['items'][1]['repository'] = 'harshad22491/forty-degrees'
+            return value, model
+        with self.assertRaisesRegex(ValueError, 'GHADC or forty-degrees'):
+            run_channel('product', drive, heavy, now=self.now)
+        self.assertEqual(drive.files, [])
+
+    def test_one_low_priority_item_is_allowed(self):
+        def one(role, prompt):
+            value, model = self.model(role, prompt)
+            if role == 'research':
+                value['items'][0]['repository'] = 'forty-degrees'
+            return value, model
+        self.assertEqual(run_channel('product', MemoryDrive(), one, now=self.now)['status'], 'approved')
+
+    def test_fresh_repository_inventory_reaches_research_and_review(self):
+        repos = [{'name': 'bank-statement-consolidation', 'recent_commits': [{'subject': 'add parser'}]}]
+        seen = {}
+        def capture(role, prompt):
+            seen[role] = prompt
+            return self.model(role, prompt)
+        run_channel('product', MemoryDrive(), capture, now=self.now, repositories=repos)
+        self.assertIn('bank-statement-consolidation', seen['research'])
+        self.assertIn('bank-statement-consolidation', seen['review'])
+
+
+class AstraCallTests(unittest.TestCase):
+    def test_missing_login_is_an_auth_failure(self):
+        with mock.patch.dict(os.environ, {'CODEX_HOME': ''}):
+            with self.assertRaises(cloud_runner.AstraAuthError):
+                cloud_runner.call_codex('prompt')
+
+    def test_auth_markers_are_recognised(self):
+        self.assertTrue(cloud_runner.is_auth_failure('Your refresh token was already used. Please log in again.'))
+        self.assertTrue(cloud_runner.is_auth_failure('unexpected status 401 Unauthorized'))
+        self.assertFalse(cloud_runner.is_auth_failure('stream disconnected before completion'))
+
+    def test_model_evidence_comes_from_session_log(self):
+        with tempfile.TemporaryDirectory() as home:
+            day = Path(home, 'sessions', '2026', '10', '01')
+            day.mkdir(parents=True)
+            day.joinpath('rollout-x-thread123.jsonl').write_text(
+                json.dumps({'type': 'turn_context', 'payload': {'model': 'gpt-6-astra'}}) + '\n', encoding='utf-8')
+            self.assertEqual(cloud_runner.session_models(home, 'thread123'), {'gpt-6-astra'})
+            self.assertEqual(cloud_runner.session_models(home, 'other'), set())
+
+    def test_model_subprocess_env_drops_every_credential(self):
+        secrets = {'RADAR_GITHUB_TOKEN': 'x', 'GOOGLE_DRIVE_OAUTH': 'x', 'CLAUDE_CODE_OAUTH_TOKEN': 'x',
+                   'CODEX_HOME': '/h', 'GH_TOKEN': 'x', 'OPENAI_API_KEY': 'x'}
+        with mock.patch.dict(os.environ, secrets):
+            env = cloud_runner.scrubbed_env(CODEX_HOME='/h')
+        self.assertEqual(env['CODEX_HOME'], '/h')
+        for key in secrets.keys() - {'CODEX_HOME'}:
+            self.assertNotIn(key, env)
+
+
+class GitHubInventoryTests(unittest.TestCase):
+    now = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
+    def test_collects_metadata_and_recent_commit_subjects_only(self):
+        repos = [
+            {'name': 'old', 'full_name': 'me/old', 'pushed_at': '2026-05-01T00:00:00Z', 'private': True},
+            {'name': 'gone', 'full_name': 'me/gone', 'pushed_at': '2026-09-30T00:00:00Z', 'archived': True},
+            {'name': 'new', 'full_name': 'me/new', 'pushed_at': '2026-09-29T00:00:00Z', 'description': 'd',
+             'language': 'Python', 'topics': ['ai']},
+        ]
+        calls = []
+        def get(token, path):
+            calls.append(path)
+            if path.startswith('user/repos'):
+                return repos
+            return [{'commit': {'message': 'feat: add parser\n\nCo-Authored-By: x',
+                                'committer': {'date': '2026-09-29T10:00:00Z'}}}]
+        result = github_inventory.collect('t', now=self.now, get=get)
+        self.assertEqual([r['name'] for r in result], ['new', 'old'])
+        self.assertEqual(result[0]['recent_commits'], [{'date': '2026-09-29', 'subject': 'feat: add parser'}])
+        self.assertEqual(result[1]['recent_commits'], [])
+        self.assertEqual(sum('commits' in c for c in calls), 1)
