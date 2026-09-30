@@ -591,9 +591,17 @@ test('validateAttestation accepts a well-formed approval', () => {
   assert.strictEqual(result.ok, true);
 });
 
-test('validateAttestation rejects a validator other than sol', () => {
-  const result = g.validateAttestation(validAttestation({ validator: 'astra' }));
-  assert.strictEqual(result.ok, false);
+test('validateAttestation rejects an unknown validator or a mismatched model', () => {
+  assert.strictEqual(g.validateAttestation(validAttestation({ validator: 'fable' })).ok, false);
+  assert.strictEqual(g.validateAttestation(validAttestation({ validator: 'astra' })).ok, false);
+});
+
+test('Astra approves an Opus 5.5 bundle', () => {
+  const b = validBundle(7, { producer: 'opus', model_id: 'claude-opus-5-5' });
+  const raw = JSON.stringify(b), sha = g.sha256Hex(raw);
+  const a = validAttestation({ candidate_run_id: b.run_id, candidate_sha256: sha, validator: 'astra', model_id: 'gpt-6-astra' });
+  assert.strictEqual(g.validateAttestation(a).ok, true);
+  assert.strictEqual(g.buildCandidateDescriptors([{ bundle: b, sha256: sha }], [a], new Set())[0].approved, true);
 });
 
 test('validateAttestation rejects a malformed candidate_sha256', () => {

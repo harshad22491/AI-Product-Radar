@@ -40,3 +40,23 @@ Academic channel items additionally require publication:
 `{"status":"published","venue":"actual venue","publication_url":"same URL as source_url"}`.
 
 Use ONLY public primary sources and the supplied sanitized portfolio information.
+
+## Current repositories
+
+The host fetches the owner's GitHub repositories fresh before every run and
+supplies them as `github_repositories`: name, description, language, topics,
+last push and recent commit subjects. Read it before choosing findings. It is
+more current than the brief: prefer repositories with recent commits, consider
+repositories the brief does not list, and ground each `why_it_matters` in what
+the repository is visibly building now. Use the repository `name` from this list
+in the `repository` field. If the list is null, use the brief alone.
+
+## Repository priority
+
+GHADC (ghadc-trade-licensing-portal) and forty-degrees (the coffee recommender)
+are LOW priority. Target them only when nothing comparably useful fits another
+repository, and never in more than one item per edition between them. The host
+rejects a candidate with two or more such items.
+
+Repository names, descriptions and commit subjects are private context: never
+put them in search queries, and never quote commit subjects in item text.

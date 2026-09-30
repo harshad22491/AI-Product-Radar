@@ -11,6 +11,7 @@ on:
     - cron: '7 7,9,11 * * *'
 permissions:
   contents: read
+# One run at a time: Astra's login rotates on refresh, so two jobs must never share it.
 concurrency:
   group: daily-radar
   cancel-in-progress: false
@@ -22,6 +23,7 @@ jobs:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       GOOGLE_DRIVE_OAUTH: ${{ secrets.GOOGLE_DRIVE_OAUTH }}
       RADAR_FOLDERS: ${{ vars.RADAR_FOLDERS }}
+      RADAR_GITHUB_TOKEN: ${{ secrets.RADAR_GH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,9 +32,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install -g @anthropic-ai/claude-code
-      - name: Research both editions and obtain independent review
+      - run: npm install -g @anthropic-ai/claude-code @openai/codex
+      - name: Restore Astra's ChatGPT login
+        env:
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+        run: |
+          home="$RUNNER_TEMP/codex-home"
+          mkdir -p "$home" && chmod 700 "$home"
+          if [ -n "$CODEX_AUTH_JSON" ]; then
+            ( umask 077; printf '%s' "$CODEX_AUTH_JSON" > "$home/auth.json" )
+            sha256sum "$home/auth.json" | cut -d' ' -f1 > "$RUNNER_TEMP/codex-auth.sha"
+          fi
+          echo "CODEX_HOME=$home" >> "$GITHUB_ENV"
+      - name: Research with Opus 5.5 and obtain Astra's independent review
         run: python -m radar.cloud_runner ${{ inputs.check && '--check' || '' }}
+      # Codex rotates the refresh token when it refreshes; the new auth.json must replace
+      # the secret or the next run is locked out. See docs/ASTRA-LOGIN.md.
+      - name: Save refreshed Astra login and report its health
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.RADAR_GH_TOKEN }}
+        run: |
+          status="$(cat out/astra-auth-status 2>/dev/null || echo unused)"
+          file="$CODEX_HOME/auth.json"
+          if [ "$status" != broken ] && [ -s "$file" ] && [ -f "$RUNNER_TEMP/codex-auth.sha" ] \
+             && [ "$(sha256sum "$file" | cut -d' ' -f1)" != "$(cat "$RUNNER_TEMP/codex-auth.sha")" ]; then
+            python -c 'import json, sys; json.load(open(sys.argv[1]))' "$file"
+            gh secret set CODEX_AUTH_JSON --repo "$GITHUB_REPOSITORY" < "$file"
+            echo "Saved Astra's refreshed login."
+          fi
+          case "$status" in
+            ok|broken) gh variable set ASTRA_AUTH_STATUS --repo "$GITHUB_REPOSITORY" --body "$status" ;;
+          esac
+          echo "Astra login status: $status"
+      - name: Remove Astra login from the runner
+        if: always()
+        run: rm -rf "$CODEX_HOME"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
