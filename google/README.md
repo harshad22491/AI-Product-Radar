@@ -35,3 +35,13 @@ An optional reviewed `RADAR_PREVIEW` is sent once as [TEST]. Its items can be ra
 ## Tests
 
 Run the four Node suites listed in the main README and the Python suite. These tests do not substitute for checking the live delivery ledger, received email and a real rating reply. See `docs/VERIFICATION.md`.
+
+## Deploy with the existing Actions credential
+
+The manual Publish Google radar gateway workflow can update the existing project
+when the original local clasp login is unavailable. Supply the project ID,
+existing deployment ID and normalized SHA-256 of the reviewed live Code source.
+It uses the existing GOOGLE_DRIVE_OAUTH secret, refuses a different live baseline,
+replaces only Code.js, verifies all live file sources, and updates the existing
+deployment version. It does not change the manifest, access policy, triggers or
+send an email. A failed API response is not deployment confirmation.

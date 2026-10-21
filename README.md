@@ -57,3 +57,20 @@ The suites cover content rules, selection, reply replay, offline notes, preview/
 `docs/wayfinder/map.md`: development map. `docs/PORTFOLIO-OVERVIEW.md`: sanitized work profile.
 
 Read-only incremental GitHub review every ten elapsed days remains implemented locally but its unattended OpenAI schedule is not activated. Client records, private source, credentials and local deployment identifiers are excluded from Git.
+
+## Coverage refresh: 22 October 2026
+
+Both editions now use the 16 owned repositories listed in
+[the portfolio brief](docs/PORTFOLIO-OVERVIEW.md) and
+[repository policy](config/repositories.json). GHADC and
+ghadc-trade-licensing-portal are explicitly excluded from new recommendations.
+
+Both researchers check Hugging Face Daily Papers, the Hugging Face Hub,
+KDnuggets and freeCodeCamp News alongside the existing source catalog.
+Discovery leads are verified against primary sources; the research edition
+still requires formally published, peer-reviewed papers. The hosted runner
+passes this configuration to both research and independent review and rejects
+excluded repository candidates before upload. The Google sender also rejects
+previously approved GHADC bundles before final delivery selection. Historical editions are retained.
+The existing schedules are unchanged. Future repository additions require an
+authorized inventory refresh; automatic private-repository review is not enabled.

@@ -506,11 +506,19 @@ function attestationApprovesCandidate(att, candidateRunId, candidateSha256) {
  * approved candidates. Ties broken by PRODUCER_PRIORITY, then run_id. Pure
  * and total: candidates missing edition_date/freshness/approval are simply
  * excluded, never silently trimmed down to fit. */
+// Keep these aliases aligned with config/repositories.json. This final gate
+// also covers bundles approved before the owner's coverage change.
+var RADAR_EXCLUDED_REPOSITORIES = ['ghadc', 'ghadc-trade-licensing-portal'];
+
 function selectDeliverableCandidate(candidates, todayEditionDate) {
   var eligible = (candidates || []).filter(function (c) {
     return c.bundle && c.bundle.edition_date === todayEditionDate
       && Array.isArray(c.freshItems) && c.freshItems.length >= MIN_ITEMS
-      && c.approved === true;
+      && c.approved === true
+      && !c.freshItems.some(function(item) {
+        var repository = String(item.repository || '').trim().replace(/\/+$/, '').split('/').pop().toLowerCase();
+        return RADAR_EXCLUDED_REPOSITORIES.indexOf(repository) !== -1;
+      });
   });
   eligible.sort(function (a, b) {
     var pa = PRODUCER_PRIORITY.indexOf(a.bundle.producer);

@@ -40,3 +40,25 @@ Academic channel items additionally require publication:
 `{"status":"published","venue":"actual venue","publication_url":"same URL as source_url"}`.
 
 Use ONLY public primary sources and the supplied sanitized portfolio information.
+
+## Coverage and discovery
+
+Use the supplied repository_policy and sanitized portfolio for both channels.
+Never recommend work for excluded or suppressed repositories, including GHADC
+and ghadc-trade-licensing-portal, even when previous_items mention them. Use the
+exact current repository name; portfolio is only for genuinely shared work.
+Cover the whole eligible portfolio over time; do not invent features or fill
+every edition with one project. Empty and planning repositories remain eligible
+for clearly labelled proposals, never claims of implemented functionality.
+
+Consult source_catalog on every research run. Check each source marked
+check_each_run for both channels, including Hugging Face Daily Papers, the
+Hugging Face Hub, KDnuggets and freeCodeCamp News. Use these alongside existing
+sources. For Hub discovery, examine relevant models, datasets, Spaces and their
+linked papers. Discovery is not evidence: follow links to original release
+notes, official documentation, model cards or publisher/proceedings pages and
+cite the primary page. A tutorial is not a research paper and an HF/arXiv listing
+is not proof of peer review. Preserve the existing age and publication rules.
+Select only relevant, verifiable findings; no quota per discovery site. If a
+site is unavailable, try search restricted to that domain; never invent a visit
+or weaken verification to fill the edition.

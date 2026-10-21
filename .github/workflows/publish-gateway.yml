@@ -1,0 +1,42 @@
+name: Publish Google radar gateway
+on:
+  workflow_dispatch:
+    inputs:
+      script_id:
+        description: Existing radar Apps Script project ID
+        required: true
+        type: string
+      deployment_id:
+        description: Existing private deployment ID
+        required: true
+        type: string
+      expected_code_sha256:
+        description: SHA256 of the current Code source after LF normalization and stripping outer whitespace
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: radar-gateway-deployment
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node google/test_gateway.cjs
+      - name: Update existing gateway and verify source
+        env:
+          GOOGLE_DRIVE_OAUTH: ${{ secrets.GOOGLE_DRIVE_OAUTH }}
+          RADAR_SCRIPT_ID: ${{ inputs.script_id }}
+          RADAR_DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+          RADAR_EXPECTED_CODE_SHA256: ${{ inputs.expected_code_sha256 }}
+        run: python scripts/publish-google-gateway.py

@@ -29,6 +29,51 @@ class CloudRunnerTests(unittest.TestCase):
             return {'items': copy.deepcopy(make_bundle()['items'])}, 'claude-fable-5-1'
         return {'verdict': 'approved', 'reasons': []}, 'claude-opus-5'
 
+
+    def test_both_channels_receive_sources_and_current_coverage(self):
+        for channel in ('product', 'academic'):
+            with self.subTest(channel=channel):
+                def inspect(role, prompt):
+                    for url in ('https://huggingface.co/papers', 'https://huggingface.co/',
+                                'https://www.kdnuggets.com/', 'https://www.freecodecamp.org/news/'):
+                        self.assertIn(url, prompt)
+                    self.assertIn('bank-statement-consolidation', prompt)
+                    self.assertIn('tally-voucher-agent', prompt)
+                    value, model = self.model(role, prompt)
+                    if role == 'research' and channel == 'academic':
+                        for item in value['items']:
+                            item['source_type'] = 'academic'
+                            item['publication'] = {'status': 'published', 'venue': 'Example conference',
+                                                   'publication_url': item['source_url']}
+                    return value, model
+                self.assertEqual(run_channel(channel, MemoryDrive(), inspect, now=self.now)['status'], 'approved')
+
+    def test_excluded_portal_cannot_reach_either_delivery_inbox(self):
+        for channel in ('product', 'academic'):
+            for repository in ('GHADC', 'ghadc-trade-licensing-portal',
+                               'harshad22491/ghadc-trade-licensing-portal'):
+                with self.subTest(channel=channel, repository=repository):
+                    drive = MemoryDrive()
+                    def excluded(role, prompt):
+                        self.assertEqual(role, 'research', 'Excluded work must fail before review')
+                        value, model = self.model(role, prompt)
+                        value['items'][0]['repository'] = repository
+                        return value, model
+                    with self.assertRaisesRegex(ValueError, 'excluded repository'):
+                        run_channel(channel, drive, excluded, now=self.now)
+                    self.assertEqual(drive.files, [])
+
+    def test_cached_excluded_candidate_is_not_reused(self):
+        drive = MemoryDrive()
+        run_channel('product', drive, self.model, now=self.now)
+        candidate = json.loads(drive.files[0][1])
+        candidate['items'][0]['repository'] = 'GHADC'
+        raw = json.dumps(candidate).encode()
+        approval = json.loads(drive.files[1][1])
+        approval['candidate_sha256'] = hashlib.sha256(raw).hexdigest()
+        drive.files = [(drive.files[0][0], raw), (drive.files[1][0], json.dumps(approval).encode())]
+        self.assertEqual(run_channel('product', drive, self.model, now=self.now)['status'], 'approved')
+
     def test_model_json_tolerates_preamble_and_markdown_without_changing_payload(self):
         self.assertEqual(parse_model_json('Here is the verified result:\n```json\n{"items": []}\n```'), {'items': []})
         self.assertEqual(parse_model_json('{"verdict":"approved","reasons":[]}\nReview complete.'),

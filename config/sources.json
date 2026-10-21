@@ -123,6 +123,66 @@
       "kind": "academic",
       "access": "public_atom",
       "weight": 0.75
+    },
+    {
+      "id": "hugging-face-papers",
+      "name": "Hugging Face Daily Papers",
+      "url": "https://huggingface.co/papers",
+      "kind": "academic",
+      "usage": "Discover papers and linked implementations. Verify original paper, date and publication status; an HF listing is not peer review.",
+      "access": "public_html",
+      "weight": 1.0,
+      "channels": [
+        "product",
+        "academic"
+      ],
+      "role": "discovery",
+      "check_each_run": true
+    },
+    {
+      "id": "hugging-face-hub",
+      "name": "Hugging Face Hub",
+      "url": "https://huggingface.co/",
+      "kind": "tool",
+      "usage": "Check models, datasets, Spaces and linked research. Verify model cards, maintainers, licenses and original releases; distinguish demos from shipped products.",
+      "access": "public_html",
+      "weight": 1.0,
+      "channels": [
+        "product",
+        "academic"
+      ],
+      "role": "discovery",
+      "check_each_run": true
+    },
+    {
+      "id": "kdnuggets",
+      "name": "KDnuggets",
+      "url": "https://www.kdnuggets.com/",
+      "kind": "technique",
+      "usage": "Discover relevant tools, techniques and papers; follow links to original documentation, releases or publications before making claims.",
+      "access": "public_html",
+      "weight": 1.0,
+      "channels": [
+        "product",
+        "academic"
+      ],
+      "role": "discovery",
+      "check_each_run": true
+    },
+    {
+      "id": "freecodecamp-news",
+      "name": "freeCodeCamp News",
+      "url": "https://www.freecodecamp.org/news/",
+      "kind": "technique",
+      "usage": "Discover practical implementations, tutorials and cited research; verify technical claims against original documentation, code or publications.",
+      "access": "public_html",
+      "weight": 1.0,
+      "channels": [
+        "product",
+        "academic"
+      ],
+      "role": "discovery",
+      "check_each_run": true
     }
   ]
 }

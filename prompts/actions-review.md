@@ -12,3 +12,9 @@ otherwise return `{"verdict":"rejected","reasons":["specific failures"]}`.
 Unavailable evidence is a rejection. Do not approve based on plausible metadata.
 The research output instructions below describe the candidate's contract, not
 your output format. Your output is always the verdict object.
+
+Reject excluded/suppressed repository recommendations and invented existing
+features. Verify claims found through discovery sites against their original
+sources. Hugging Face listings, KDnuggets articles and freeCodeCamp tutorials
+alone do not establish peer-reviewed publication. The supplied editorial
+configuration and portfolio apply to your review as well as research.

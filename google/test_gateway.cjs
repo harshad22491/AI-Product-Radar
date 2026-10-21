@@ -659,6 +659,28 @@ test('selectDeliverableCandidate does not silently reduce items — the whole ca
   assert.strictEqual(g.selectDeliverableCandidate(candidates, '2026-09-15'), null);
 });
 
+
+test('sender exclusions match the research policy', () => {
+  const policy = JSON.parse(fs.readFileSync('config/repositories.json', 'utf8'));
+  assert.deepStrictEqual(norm(g.RADAR_EXCLUDED_REPOSITORIES).sort(),
+                         policy.excluded_repositories.map(name => name.toLowerCase()).sort());
+});
+
+test('sender rejects approved portal bundles before choosing a safe replacement in either channel', () => {
+  for (const newsletter of ['product', 'academic']) {
+    for (const repository of ['GHADC', 'ghadc-trade-licensing-portal',
+                              'harshad22491/ghadc-trade-licensing-portal']) {
+      const old = candidate('fable', 'aaa-old', '2026-10-22', 7, true);
+      const replacement = candidate('fable', 'zzz-new', '2026-10-22', 7, true);
+      old.bundle.newsletter = replacement.bundle.newsletter = newsletter;
+      old.freshItems[0].repository = repository;
+      replacement.freshItems.forEach(item => { item.repository = 'bank-statement-consolidation'; });
+      assert.strictEqual(g.selectDeliverableCandidate([old, replacement], '2026-10-22'), replacement);
+      assert.strictEqual(g.selectDeliverableCandidate([old], '2026-10-22'), null);
+    }
+  }
+});
+
 // --- filterUndeliveredItems ---------------------------------------------------
 
 test('filterUndeliveredItems drops items already delivered', () => {

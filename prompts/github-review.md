@@ -9,3 +9,9 @@ Never read credentials, environment files, client records, workbooks, invoices, 
 Output a sanitized summary, emerging topic keywords, and proposed source additions, each tied to observed safe repository evidence. Explain using simple examples. Write an immutable review result through the configured cloud exchange, recording repository ID/name, actual UTC review time, inspected head SHA, success/failure, sanitized evidence summary, and keywords. Update only each successfully completed repository's cursor. Partial access failure must remain visible and retryable.
 
 No actual GitHub source data may be sent to a Claude/OpenRouter worker under the separate build-input approval. That approval covers new-project specification and generated code only. If the cloud connector cannot read private repositories or persist review results unattended, stop that part and report BLOCKED. Do not claim a successful analysis from repository names alone.
+
+During every authorized portfolio refresh, reconcile the full owned-repository
+inventory with config/repositories.json and docs/PORTFOLIO-OVERVIEW.md. Include
+new repositories, mark empty/planning repositories honestly, and preserve the
+explicit GHADC / ghadc-trade-licensing-portal exclusion in both newsletters.
+Do not restore excluded projects merely because they still exist on GitHub.

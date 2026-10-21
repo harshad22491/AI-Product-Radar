@@ -1,0 +1,30 @@
+{
+  "owner": "harshad22491",
+  "verified_on": "2026-10-22",
+  "inventory_basis": "Authenticated GitHub owner enumeration: 17 repositories; one explicitly excluded.",
+  "repositories": [
+    "AI-Product-Radar",
+    "bank-statement-agent-reports",
+    "bank-statement-consolidation",
+    "Branding-Report-Automation",
+    "bulk-deals-mailer",
+    "burgundy-tally-automation",
+    "Daily-News-Brief",
+    "Daily-Position-Automation",
+    "ERP-Agent-Factory",
+    "forty-degrees",
+    "herdr-agentpanel",
+    "Investment-Dashboard",
+    "skills-introduction-to-github",
+    "Software_Factory",
+    "tally-voucher-agent",
+    "TCPL-Data-Entry"
+  ],
+  "excluded_repositories": [
+    "GHADC",
+    "ghadc-trade-licensing-portal"
+  ],
+  "fallback_label": "portfolio",
+  "scope": "Both product and academic. All listed repositories are eligible; no per-edition quota.",
+  "refresh_policy": "Re-enumerate owned repositories during an authorized portfolio refresh; preserve exclusions. Do not infer implemented features from a name."
+}

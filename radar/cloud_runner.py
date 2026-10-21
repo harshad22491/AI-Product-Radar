@@ -42,10 +42,22 @@ def approved(bundle, raw, records):
     )
 
 
+def validate_repository_scope(items, excluded):
+    for item in items:
+        repository = item.get('repository', '').strip().rstrip('/').split('/')[-1].casefold()
+        if repository in excluded:
+            raise ValueError('Candidate contains an excluded repository: ' + item['repository'])
+
+
 def run_channel(channel, drive, model, *, now=None, correction=''):
     now = now or datetime.now(timezone.utc)
     day = now.astimezone(IST).date().isoformat()
     snapshot, preferences, files = drive.state()
+    repository_policy = json.loads((ROOT / 'config/repositories.json').read_text(encoding='utf-8'))
+    excluded_repositories = {
+        name.strip().rstrip('/').split('/')[-1].casefold()
+        for name in repository_policy['excluded_repositories'] + preferences.get('suppressed_repositories', [])
+    }
     delivered = {i['item_id'] for i in snapshot['items'] if i.get('first_delivered_edition_date')}
     sent_today = {i['item_id']: i.get('run_id') for i in snapshot['items']
                   if i.get('first_delivered_edition_date') == day}
@@ -70,6 +82,7 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
         if bundle.get('newsletter', 'product') != channel or bundle.get('edition_date') != day:
             continue
         try:
+            validate_repository_scope(bundle.get('items', []), excluded_repositories)
             validate_bundle(bundle)
             validate_gateway(bundle)
         except ValueError:
@@ -79,6 +92,12 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
 
     brief = (ROOT / 'docs/PORTFOLIO-OVERVIEW.md').read_text(encoding='utf-8')
     contract = (ROOT / 'prompts/actions-research.md').read_text(encoding='utf-8')
+    sources = json.loads((ROOT / 'config/sources.json').read_text(encoding='utf-8'))
+    editorial = {'repository_policy': repository_policy, 'source_catalog': sources,
+                 'suppressed_repositories': sorted(excluded_repositories)}
+    if channel == 'academic':
+        editorial['academic_policy'] = json.loads((ROOT / 'config/academic.json').read_text(encoding='utf-8'))
+    contract += '\nEDITORIAL CONFIGURATION:\n' + json.dumps(editorial)
     context = {'edition_date': day, 'newsletter': channel, 'preferences': preferences,
                'previous_items': snapshot['items']}
     if correction:
@@ -95,6 +114,7 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
               'run_id': f'{channel}-fable-{day}-{uuid4().hex[:12]}', 'edition_date': day,
               'generated_at': now.isoformat(), 'producer': 'fable', 'model_id': actual_model,
               'items': research['items']}
+    validate_repository_scope(bundle['items'], excluded_repositories)
     for item in bundle['items']:
         item['item_id'] = stable_item_id(item['source_url'])
     bundle = validate_bundle(bundle)

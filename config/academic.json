@@ -55,5 +55,12 @@
       "url": "https://jmlr.org/tmlr/"
     }
   ],
-  "provider_configuration": "local-prompts-ready-cloud-save-unverified"
+  "provider_configuration": "local-prompts-ready-cloud-save-unverified",
+  "discovery_source_ids": [
+    "hugging-face-papers",
+    "hugging-face-hub",
+    "kdnuggets",
+    "freecodecamp-news"
+  ],
+  "discovery_policy": "Check all four discovery sources on each research run. Follow candidates to formally published peer-reviewed publisher/proceedings pages; tutorials and preprint-only listings do not qualify."
 }
