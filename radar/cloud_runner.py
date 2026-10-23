@@ -15,6 +15,13 @@ from radar.domain import stable_item_id, validate_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 IST = timezone(timedelta(hours=5, minutes=30))
+# Opus 5.5 researches only when Fable reports exhausted usage credits.
+RESEARCH_MODELS = ('claude-fable-5-1', 'claude-opus-5-5')
+REVIEW_MODEL = 'claude-opus-5'
+
+
+class OutOfCredits(RuntimeError):
+    pass
 
 
 def encode(value):
@@ -115,7 +122,7 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
               for i in b.get('items', [])]
     context['queued_items'] = queued
     research, actual_model = model('research', contract + '\n' + brief + '\nINPUT:\n' + json.dumps(context))
-    if actual_model != 'claude-fable-5-1':
+    if actual_model not in RESEARCH_MODELS:
         raise ValueError('Unexpected research model: ' + actual_model)
     bundle = {'schema_version': 1, 'kind': 'digest', 'newsletter': channel,
               'run_id': f'{channel}-fable-{day}-{uuid4().hex[:12]}', 'edition_date': day,
@@ -134,7 +141,7 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
     review_prompt = (ROOT / 'prompts/actions-review.md').read_text(encoding='utf-8')
     review, reviewer_model = model('review', review_prompt + '\n' + contract + '\n' + brief
                                    + '\nCANDIDATE:\n' + raw.decode('utf-8'))
-    if reviewer_model != 'claude-opus-5':
+    if reviewer_model != REVIEW_MODEL:
         raise ValueError('Unexpected reviewer model: ' + reviewer_model)
     if review.get('verdict') != 'approved':
         raise RuntimeError('Independent review rejected candidate: ' + str(review.get('reasons', [])))
@@ -184,7 +191,17 @@ def cli_detail(result):
 
 
 def call_model(role, prompt):
-    model = 'claude-fable-5-1' if role == 'research' else 'claude-opus-5'
+    models = RESEARCH_MODELS if role == 'research' else (REVIEW_MODEL,)
+    for model in models:
+        try:
+            return run_cli(role, model, prompt)
+        except OutOfCredits:
+            if model == models[-1]:
+                raise
+            print(f'{model} is out of usage credits; falling back', flush=True)
+
+
+def run_cli(role, model, prompt):
     print(f'Starting {role} with {model}', flush=True)
     env = dict(os.environ)
     # The research process gets subscription auth, never Drive or GitHub credentials.
@@ -200,11 +217,17 @@ def call_model(role, prompt):
              '--setting-sources', '', '--no-session-persistence'],
             input=prompt, capture_output=True, text=True, encoding='utf-8',
             timeout=600, cwd=temp, env=env, check=False)
+    detail = cli_detail(result) if result.returncode else ''
+    if 'out of usage credits' in detail.lower():
+        raise OutOfCredits(f'{role} CLI failed (exit {result.returncode}): {detail}')
     if result.returncode:
-        raise RuntimeError(f'{role} CLI failed (exit {result.returncode}): {cli_detail(result)}')
+        raise RuntimeError(f'{role} CLI failed (exit {result.returncode}): {detail}')
     envelope = json.loads(result.stdout)
     if envelope.get('is_error'):
-        raise RuntimeError(f'{role} returned a provider error: {cli_detail(result)}')
+        detail = cli_detail(result)
+        if 'out of usage credits' in detail.lower():
+            raise OutOfCredits(f'{role} returned a provider error: {detail}')
+        raise RuntimeError(f'{role} returned a provider error: {detail}')
     if envelope.get('permission_denials'):
         raise RuntimeError(f'{role} could not access required research tools')
     usage = envelope.get('modelUsage', {})

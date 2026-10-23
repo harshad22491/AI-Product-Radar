@@ -192,3 +192,26 @@ class CloudRunnerTests(unittest.TestCase):
         with mock.patch('radar.cloud_runner.subprocess.run', return_value=failed):
             with self.assertRaisesRegex(RuntimeError, r'research CLI failed \(exit 1\): Usage limit reached'):
                 call_model('research', 'prompt')
+
+    def test_research_falls_back_to_opus_when_fable_is_out_of_credits(self):
+        out = SimpleNamespace(returncode=1, stderr='', stdout=json.dumps(
+            {'is_error': True, 'result': "You're out of usage credits. Switch to another model to continue."}))
+        ok = SimpleNamespace(returncode=0, stderr='', stdout=json.dumps(
+            {'modelUsage': {'claude-opus-5-5': {}}, 'structured_output': {'items': []}}))
+        with mock.patch('radar.cloud_runner.subprocess.run', side_effect=[out, ok]) as run:
+            self.assertEqual(call_model('research', 'prompt'), ({'items': []}, 'claude-opus-5-5'))
+        self.assertIn('claude-opus-5-5', run.call_args_list[1].args[0])
+        drive = MemoryDrive()
+        def fallback(role, prompt):
+            value, model = self.model(role, prompt)
+            return value, 'claude-opus-5-5' if role == 'research' else model
+        self.assertEqual(run_channel('product', drive, fallback, now=self.now)['status'], 'approved')
+        self.assertEqual(json.loads(drive.files[0][1])['model_id'], 'claude-opus-5-5')
+
+    def test_reviewer_out_of_credits_does_not_fall_back(self):
+        out = SimpleNamespace(returncode=1, stderr='', stdout=json.dumps(
+            {'is_error': True, 'result': "You're out of usage credits."}))
+        with mock.patch('radar.cloud_runner.subprocess.run', return_value=out) as run:
+            with self.assertRaisesRegex(RuntimeError, 'out of usage credits'):
+                call_model('review', 'prompt')
+        self.assertEqual(run.call_count, 1)
