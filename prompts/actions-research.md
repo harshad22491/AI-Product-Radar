@@ -28,7 +28,8 @@ If seven compliant items cannot be verified, return `{"items":[]}`.
 
 Each item has exactly: title, source_url (HTTPS primary page), published_at
 (YYYY-MM-DD), source_type (product/tool/technique/academic), summary (80–130
-plain-language words), why_it_matters, evidence_label, repository (from supplied
+plain-language words), why_it_matters, evidence_label (at most 300 characters,
+one short sentence naming the evidence), repository (from supplied
 brief, or portfolio), topics (one to three strings), user_facing_ai (boolean),
 application_example (40–90 words, concrete hypothetical input and useful output),
 guidance (five full strings ordered Where, Try, Benefit, Effort, Check).
@@ -36,6 +37,17 @@ The host calculates item_id; omit it. Each guidance entry should be one or two
 sentences, and Effort should estimate time for a small trial. Explain limits;
 distinguish vendor claims, paper evidence and proposed work. No invented existing
 repository features. Ratings guide relevance, never factual credibility.
+
+Hard checks that past attempts failed; check each item before answering:
+- Count the summary's words; it must be 80 to 130, not merely close.
+- published_at is the publication or release date shown on the primary page
+  (for papers, the publisher's published or proceedings date). Never use a DOI
+  registration, Crossref deposit, indexing or "last updated" date.
+- Describe a repository only with facts stated in the supplied brief. Anything
+  else is a clearly labelled proposal ("could add", "a trial would"), never a
+  claim that the repository already does it.
+- source_url and every link use https.
+
 Academic channel items additionally require publication:
 `{"status":"published","venue":"actual venue","publication_url":"same URL as source_url"}`.
 

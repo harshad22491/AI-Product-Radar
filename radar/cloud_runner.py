@@ -42,6 +42,13 @@ def approved(bundle, raw, records):
     )
 
 
+def fit_evidence_label(item, limit=300):
+    # A long evidence note is cosmetic; trim it instead of discarding a whole research attempt.
+    label = item.get('evidence_label')
+    if isinstance(label, str) and len(label.strip()) > limit:
+        item['evidence_label'] = label.strip()[:limit - 1].rsplit(' ', 1)[0].rstrip(' ,;:') + '…'
+
+
 def validate_repository_scope(items, excluded):
     for item in items:
         repository = item.get('repository', '').strip().rstrip('/').split('/')[-1].casefold()
@@ -117,6 +124,7 @@ def run_channel(channel, drive, model, *, now=None, correction=''):
     validate_repository_scope(bundle['items'], excluded_repositories)
     for item in bundle['items']:
         item['item_id'] = stable_item_id(item['source_url'])
+        fit_evidence_label(item)
     bundle = validate_bundle(bundle)
     validate_gateway(bundle)
     excluded = delivered | {i['item_id'] for i in queued}
@@ -165,6 +173,16 @@ def parse_model_json(text):
     return objects[0]
 
 
+def cli_detail(result):
+    """Short failure reason; the JSON envelope on stdout carries the provider message."""
+    try:
+        envelope = json.loads(result.stdout)
+        detail = envelope.get('result') or envelope.get('subtype') or ''
+    except (ValueError, TypeError, AttributeError):
+        detail = ''
+    return ' '.join(str(detail or result.stderr or result.stdout or 'no output').split())[:1000]
+
+
 def call_model(role, prompt):
     model = 'claude-fable-5-1' if role == 'research' else 'claude-opus-5'
     print(f'Starting {role} with {model}', flush=True)
@@ -183,10 +201,10 @@ def call_model(role, prompt):
             input=prompt, capture_output=True, text=True, encoding='utf-8',
             timeout=600, cwd=temp, env=env, check=False)
     if result.returncode:
-        raise RuntimeError(f'{role} CLI failed (exit {result.returncode})')
+        raise RuntimeError(f'{role} CLI failed (exit {result.returncode}): {cli_detail(result)}')
     envelope = json.loads(result.stdout)
     if envelope.get('is_error'):
-        raise RuntimeError(f'{role} returned a provider error')
+        raise RuntimeError(f'{role} returned a provider error: {cli_detail(result)}')
     if envelope.get('permission_denials'):
         raise RuntimeError(f'{role} could not access required research tools')
     usage = envelope.get('modelUsage', {})

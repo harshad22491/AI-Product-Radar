@@ -3,8 +3,10 @@ import hashlib
 import json
 import unittest
 from datetime import datetime, timezone
+from types import SimpleNamespace
+from unittest import mock
 
-from radar.cloud_runner import run_channel, parse_model_json
+from radar.cloud_runner import call_model, run_channel, parse_model_json
 from test_domain import make_bundle
 
 
@@ -171,3 +173,22 @@ class CloudRunnerTests(unittest.TestCase):
         self.assertEqual(run_channel('academic', drive, academic, now=self.now)['status'], 'approved')
         self.assertEqual(json.loads(drive.files[2][1])['newsletter'], 'academic')
         self.assertEqual(len(drive.files), 4)
+
+    def test_long_evidence_label_is_trimmed_instead_of_failing_the_attempt(self):
+        drive = MemoryDrive()
+        def verbose(role, prompt):
+            value, model = self.model(role, prompt)
+            if role == 'research':
+                value['items'][3]['evidence_label'] = 'Release notes and changelog entry ' * 20
+            return value, model
+        self.assertEqual(run_channel('product', drive, verbose, now=self.now)['status'], 'approved')
+        label = json.loads(drive.files[0][1])['items'][3]['evidence_label']
+        self.assertLessEqual(len(label), 300)
+        self.assertTrue(label.startswith('Release notes and changelog entry'))
+
+    def test_failed_cli_reports_provider_message(self):
+        envelope = json.dumps({'type': 'result', 'is_error': True, 'result': 'Usage limit reached'})
+        failed = SimpleNamespace(returncode=1, stdout=envelope, stderr='')
+        with mock.patch('radar.cloud_runner.subprocess.run', return_value=failed):
+            with self.assertRaisesRegex(RuntimeError, r'research CLI failed \(exit 1\): Usage limit reached'):
+                call_model('research', 'prompt')
